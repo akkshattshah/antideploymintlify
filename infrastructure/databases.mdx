@@ -1,0 +1,175 @@
+---
+title: "Managed PostgreSQL: Provisioning, Backups, and Connections"
+sidebarTitle: "Databases"
+description: "Antideploy auto-provisions PostgreSQL when your app uses an ORM or SQL, with daily backups, connection pooling, and point-in-time restore built in."
+---
+
+If your app queries a database, Antideploy provisions one for it. The platform detects ORM usage, SQL queries, and database migration files during the build step and creates a fully managed PostgreSQL instance automatically. You never configure a database server, manage connection limits, or set up backup schedules.
+
+## Auto-detection and provisioning
+
+Antideploy looks for the following signals to determine that your app needs a database:
+
+- A recognized ORM dependency: Prisma, Drizzle, SQLAlchemy, Django ORM, ActiveRecord, Sequelize, TypeORM, Hibernate
+- SQL files or migration directories (`/migrations`, `/db/migrate`, `prisma/migrations`, etc.)
+- Direct PostgreSQL client usage (`pg`, `psycopg2`, `asyncpg`, etc.)
+
+When any of these are detected, a PostgreSQL instance is provisioned in the same region as your compute and connected automatically before your first deployment completes.
+
+## The DATABASE_URL environment variable
+
+Antideploy injects a `DATABASE_URL` connection string into your app's environment at runtime. You never hardcode credentials or manage secrets manually.
+
+```
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+```
+
+Your app can read this variable directly. Most ORMs and database clients pick it up automatically:
+
+<CodeGroup>
+```javascript Node.js (pg)
+// DATABASE_URL is automatically injected
+const { Pool } = require('pg')
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+
+async function getUsers() {
+  const result = await pool.query('SELECT * FROM users')
+  return result.rows
+}
+```
+
+```javascript Node.js (Prisma)
+// Prisma reads DATABASE_URL from the environment automatically
+// datasource in schema.prisma:
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+```
+
+```python Python (SQLAlchemy)
+import os
+from sqlalchemy import create_engine
+
+engine = create_engine(os.environ["DATABASE_URL"])
+```
+
+```python Python (psycopg2)
+import os
+import psycopg2
+
+conn = psycopg2.connect(os.environ["DATABASE_URL"])
+```
+</CodeGroup>
+
+## Database tiers
+
+Antideploy selects a database tier automatically based on your app's detected usage patterns. You can change the tier at any time from the dashboard or CLI — no downtime required for vertical scaling.
+
+| Tier | vCPU | Memory | Storage |
+|---|---|---|---|
+| **Starter** | Shared | 256 MB | 1 GB |
+| **Basic** | 1 vCPU | 1 GB | 10 GB |
+| **Standard** | 2 vCPU | 4 GB | 50 GB |
+| **Professional** | 4 vCPU | 16 GB | 200 GB |
+| **Enterprise** | 8 vCPU | 32 GB | 500 GB+ |
+
+To change your database tier:
+
+```bash
+antideploy db:resize --app my-app --tier standard
+```
+
+## Automatic backups and restore
+
+Antideploy takes a full database backup every day at 02:00 UTC and retains backups for 7 days on Starter and Basic tiers, and 30 days on Standard and above.
+
+Point-in-time recovery (PITR) is available on Standard tier and above, allowing you to restore your database to any second within the retention window.
+
+### Restoring from a backup
+
+<Steps>
+  <Step title="Open your database in the dashboard">
+    Navigate to **Infrastructure → Database** and click **Backups** in the left sidebar.
+  </Step>
+  <Step title="Select a restore point">
+    Choose a daily backup snapshot from the list, or use the date-and-time picker for point-in-time recovery.
+  </Step>
+  <Step title="Choose a restore target">
+    Restore in-place to your current database (destructive — the existing data is overwritten), or restore into a new database instance for inspection.
+  </Step>
+  <Step title="Confirm the restore">
+    Click **Restore** and confirm the operation. In-place restores take your database offline briefly while the restore runs. Antideploy sends a notification when it's complete.
+  </Step>
+</Steps>
+
+<Warning>
+In-place restores are irreversible. Any data written to the database after the restore point will be lost. For safety, restore into a new instance first, verify the data, and then promote it if needed.
+</Warning>
+
+## Viewing your database
+
+Go to **Infrastructure → Database** in the dashboard to see:
+
+- Connection status and current connections
+- Database size and storage usage
+- Slow query log (queries over 100 ms by default)
+- Table-level statistics
+- Backup schedule and available restore points
+
+## Connecting from outside the platform
+
+By default, your database is only accessible from within your Antideploy app's private network. To connect from an external tool (for example, a local psql session, TablePlus, or a CI/CD pipeline), enable external access:
+
+1. Go to **Infrastructure → Database → Settings**.
+2. Toggle **Allow external connections** to on.
+3. Copy the external connection string — this uses a different host and port than the internal `DATABASE_URL`.
+4. Optionally, restrict access to specific IP addresses using the allowlist.
+
+<Note>
+The external connection string includes different credentials than the internal `DATABASE_URL`. Store it securely and rotate it regularly if used in scripts or CI environments.
+</Note>
+
+### Connection pooling
+
+Antideploy includes a connection pooler (PgBouncer) in front of every database. Your app connects to the pooler, which manages a fixed number of actual connections to PostgreSQL. This prevents connection exhaustion under load.
+
+The pooler is enabled by default and transparent — your `DATABASE_URL` already points to it. If you need a direct (non-pooled) connection for administrative tasks or migrations, use the `DATABASE_DIRECT_URL` variable instead, which is also injected automatically.
+
+## Branching a database for staging
+
+To give your staging environment its own isolated database without copying data manually, use database branching:
+
+```bash
+antideploy db:branch --app my-app --from production --name staging
+```
+
+This creates a new database instance as a copy of production. The branch gets its own `DATABASE_URL` and is linked to your staging environment automatically.
+
+<Tip>
+Branches are snapshots, not live replicas. Changes in production after branching are not reflected in the branch. Re-branch periodically to keep staging data fresh.
+</Tip>
+
+## Running migrations
+
+Antideploy detects migration commands from your project configuration and runs them automatically before each deployment completes.
+
+| Tool | Detected command |
+|---|---|
+| Prisma | `prisma migrate deploy` |
+| Drizzle | `drizzle-kit migrate` |
+| Django | `python manage.py migrate` |
+| Rails | `rails db:migrate` |
+| Knex | `knex migrate:latest` |
+| Flyway / Liquibase | Configuration file detected |
+
+If your migration command isn't detected automatically, specify it in your `antideploy.toml`:
+
+```toml
+[deploy]
+run_before = "npm run db:migrate"
+```
+
+Migrations run inside a one-off container with the same environment as your app, including the `DATABASE_URL`. If the migration fails, the deployment is halted and the previous version stays live.

@@ -1,0 +1,254 @@
+---
+title: "Logs API: Query and Stream Application Logs"
+sidebarTitle: "Logs"
+description: "Use the Logs API to search and filter historical application logs by time, level, or text, and stream live logs in real time over SSE."
+---
+
+The Logs API gives you programmatic access to everything your application writes to stdout and stderr, plus Antideploy's platform-level events (deployment steps, health check failures, scaling events). You can query historical logs with filters, or open a live stream using Server-Sent Events (SSE).
+
+All log endpoints are scoped to an app. Retrieve the app ID you need from the [Apps API](/api/apps).
+
+---
+
+## The log entry object
+
+```json
+{
+  "timestamp": "2024-01-15T14:05:12Z",
+  "level": "error",
+  "message": "Unhandled exception in /api/checkout",
+  "deployment_id": "dep_xyz789",
+  "instance_id": "inst_001",
+  "metadata": {}
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `timestamp` | string | ISO 8601 timestamp when the log line was emitted. |
+| `level` | string | Log level: `debug`, `info`, `warn`, `error`. |
+| `message` | string | The full text of the log line. |
+| `deployment_id` | string | ID of the deployment that produced this log entry. |
+| `instance_id` | string | ID of the specific instance that produced this log entry. |
+| `metadata` | object | Optional structured key-value pairs your app attached to the log entry. Empty object if none. |
+
+---
+
+## Query historical logs
+
+```
+GET /apps/{app_id}/logs
+```
+
+Retrieves historical log entries for an app, ordered from newest to oldest. Supports filtering by time range, log level, and full-text search.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app whose logs you want to query.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="from" type="string">
+  Start of the time range as an ISO 8601 timestamp (e.g., `2024-01-15T14:00:00Z`). Defaults to 1 hour ago.
+</ParamField>
+
+<ParamField query="to" type="string">
+  End of the time range as an ISO 8601 timestamp. Defaults to now.
+</ParamField>
+
+<ParamField query="level" type="string">
+  Filter by log level. One of: `debug`, `info`, `warn`, `error`. Returns only entries at the specified level. Omit to return all levels.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Full-text search string. Returns only log entries whose `message` contains the search term (case-insensitive).
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Number of log entries to return per page. Maximum is `1000`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from a previous response's `next_cursor`. Used to page through large result sets.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="items" type="array">
+  Array of log entry objects matching the query, ordered newest-first.
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string">
+  Cursor to fetch the next (older) page of results. `null` when there are no more entries in the time range.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  `true` if additional pages of results exist.
+</ResponseField>
+
+### Example — query the last hour of errors
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  "https://api.antideploy.io/v1/apps/app_abc123/logs?level=error&limit=50"
+```
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "timestamp": "2024-01-15T14:05:12Z",
+        "level": "error",
+        "message": "Unhandled exception in /api/checkout",
+        "deployment_id": "dep_xyz789",
+        "instance_id": "inst_001",
+        "metadata": {
+          "route": "/api/checkout",
+          "user_id": "usr_987"
+        }
+      },
+      {
+        "timestamp": "2024-01-15T13:58:44Z",
+        "level": "error",
+        "message": "Database connection timeout after 5000ms",
+        "deployment_id": "dep_xyz789",
+        "instance_id": "inst_002",
+        "metadata": {}
+      }
+    ],
+    "next_cursor": "cur_log_prev",
+    "has_more": true
+  },
+  "error": null
+}
+```
+
+### Example — search logs for a specific string
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  "https://api.antideploy.io/v1/apps/app_abc123/logs?search=stripe&from=2024-01-15T00:00:00Z&to=2024-01-15T23:59:59Z"
+```
+
+<Tip>
+  Combine `level=error` with `search` to quickly isolate errors related to a specific route, module, or integration during an incident.
+</Tip>
+
+---
+
+## Stream live logs
+
+```
+GET /apps/{app_id}/logs/stream
+```
+
+Opens a **Server-Sent Events (SSE)** connection and streams log entries in real time as your application produces them. The connection stays open until you close it. Each event is a JSON-encoded log entry object.
+
+<Note>
+  SSE is a one-way, server-to-client stream over a persistent HTTP connection. It is supported natively in browsers via the `EventSource` API and in most HTTP clients. Unlike WebSockets, SSE works through standard HTTP proxies and load balancers without special configuration.
+</Note>
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app whose live logs you want to stream.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="level" type="string">
+  Filter the stream to a specific log level. One of: `debug`, `info`, `warn`, `error`. Omit to receive all levels.
+</ParamField>
+
+<ParamField query="deployment_id" type="string">
+  Restrict the stream to logs from a specific deployment. Useful for following a build or deployment in progress.
+</ParamField>
+
+### Response
+
+The endpoint returns `Content-Type: text/event-stream`. Each event follows the SSE format:
+
+```
+data: {"timestamp":"2024-01-15T14:05:12Z","level":"info","message":"Server listening on port 3000","deployment_id":"dep_xyz789","instance_id":"inst_001","metadata":{}}
+
+data: {"timestamp":"2024-01-15T14:05:13Z","level":"info","message":"GET /health 200 OK (4ms)","deployment_id":"dep_xyz789","instance_id":"inst_001","metadata":{}}
+```
+
+Antideploy sends a keepalive comment (`: ping`) every 15 seconds to prevent proxy timeouts:
+
+```
+: ping
+```
+
+### Example — stream logs with curl
+
+```bash
+# Stream live logs via SSE
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  https://api.antideploy.io/v1/apps/app_abc123/logs/stream
+```
+
+### Example — stream logs for a specific deployment
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  "https://api.antideploy.io/v1/apps/app_abc123/logs/stream?deployment_id=dep_xyz789"
+```
+
+### Example — stream with the browser EventSource API
+
+```javascript
+const key = process.env.ANTIDEPLOY_API_KEY
+
+// Note: EventSource does not support custom headers natively in some environments.
+// Pass the API key as a query parameter for browser-based streaming.
+const stream = new EventSource(
+  `https://api.antideploy.io/v1/apps/app_abc123/logs/stream?api_key=${key}`
+)
+
+stream.onmessage = (event) => {
+  const entry = JSON.parse(event.data)
+  console.log(`[${entry.level.toUpperCase()}] ${entry.timestamp} — ${entry.message}`)
+}
+
+stream.onerror = (err) => {
+  console.error('Stream error:', err)
+  stream.close()
+}
+```
+
+### Example — stream with Node.js fetch
+
+```javascript
+const res = await fetch(
+  'https://api.antideploy.io/v1/apps/app_abc123/logs/stream',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.ANTIDEPLOY_API_KEY}`
+    }
+  }
+)
+
+const reader = res.body.getReader()
+const decoder = new TextDecoder()
+
+while (true) {
+  const { done, value } = await reader.read()
+  if (done) break
+
+  const text = decoder.decode(value)
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      const entry = JSON.parse(line.slice(6))
+      console.log(`[${entry.level}] ${entry.message}`)
+    }
+  }
+}
+```
+
+<Warning>
+  Do not leave SSE connections open indefinitely in serverless or short-lived environments. Streams are intended for interactive sessions, deployment monitoring, and real-time dashboards. For persistent log ingestion, use the [historical logs endpoint](#query-historical-logs) on a schedule or set up a log drain from the dashboard.
+</Warning>

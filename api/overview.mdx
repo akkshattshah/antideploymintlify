@@ -1,0 +1,161 @@
+---
+title: "Antideploy REST API Reference Overview"
+sidebarTitle: "Overview"
+description: "Explore the Antideploy REST API: base URL, versioning, rate limits, request/response format, pagination, and error handling."
+---
+
+The Antideploy REST API gives you programmatic access to every part of the platform — create and manage applications, trigger deployments, inspect infrastructure, and stream logs, all over HTTP. Every feature available in the dashboard is available through the API.
+
+All requests go to the base URL:
+
+```
+https://api.antideploy.io/v1
+```
+
+Before making your first request, read the [Authentication](/api/authentication) page to learn how to obtain and use an API key.
+
+---
+
+## Versioning
+
+The current API version is **v1**, reflected in the base URL path. When Antideploy introduces breaking changes, a new version prefix (`/v2`, etc.) is released. The previous version remains available for a deprecation window announced in the changelog. Non-breaking additions — new fields, new optional parameters, new endpoints — are added to the current version without a version bump.
+
+<Note>
+  Pin your integrations to `/v1` explicitly. Antideploy will not redirect unversioned requests.
+</Note>
+
+---
+
+## Rate limits
+
+Each API key is allowed **1,000 requests per minute**. Limits are tracked on a rolling 60-second window per key. If you exceed the limit, the API returns `429 Too Many Requests`.
+
+The following headers are included on every response so you can track your usage:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | Maximum requests allowed per minute |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+
+<Tip>
+  If you hit rate limits frequently, consider batching operations or caching responses where possible. Organization API keys share a single limit across all callers using that key.
+</Tip>
+
+---
+
+## Request format
+
+All request bodies must be JSON. Set the `Content-Type` header on every request that includes a body:
+
+```bash
+Content-Type: application/json
+```
+
+Query parameters are plain URL-encoded strings. Boolean values in query strings are `true` or `false`.
+
+---
+
+## Response format
+
+Every response — success or error — is a JSON object with a consistent envelope:
+
+```json
+{
+  "data": { ... },
+  "error": null
+}
+```
+
+On success, `data` contains the response payload and `error` is `null`. On failure, `data` is `null` and `error` contains a structured error object (see [Error responses](#error-responses) below).
+
+---
+
+## HTTP status codes
+
+| Code | Meaning |
+|---|---|
+| `200 OK` | Request succeeded. Response body contains the result. |
+| `201 Created` | Resource was created successfully. |
+| `400 Bad Request` | The request body or parameters are invalid. |
+| `401 Unauthorized` | Missing or invalid API key. |
+| `403 Forbidden` | Valid API key, but insufficient permissions. |
+| `404 Not Found` | The requested resource does not exist. |
+| `429 Too Many Requests` | Rate limit exceeded. |
+| `500 Server Error` | An unexpected error occurred on Antideploy's end. |
+
+---
+
+## Pagination
+
+List endpoints return paginated results using **cursor-based pagination**. Cursors are opaque strings — do not attempt to decode or construct them manually.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `limit` | integer | `20` | Number of items to return. Maximum is `100`. |
+| `cursor` | string | — | Cursor from a previous response's `next_cursor` to fetch the next page. |
+
+**Response envelope for list endpoints:**
+
+```json
+{
+  "data": {
+    "items": [ ... ],
+    "next_cursor": "cur_abc123",
+    "has_more": true
+  },
+  "error": null
+}
+```
+
+When `has_more` is `false`, you have reached the last page. Pass `next_cursor` as the `cursor` query parameter to fetch the next page.
+
+---
+
+## Error responses
+
+When a request fails, the response body contains a structured error object:
+
+```json
+{
+  "error": {
+    "code": "app_not_found",
+    "message": "No application found with ID app_xyz",
+    "status": 404
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `code` | string | Machine-readable error code you can match on in your code. |
+| `message` | string | Human-readable description of the error. |
+| `status` | integer | The HTTP status code, mirrored in the body for convenience. |
+
+<Warning>
+  Never display raw `message` strings directly to end users — they may contain internal resource identifiers. Map `code` values to your own user-facing messages.
+</Warning>
+
+---
+
+## API resources
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Get an API key, understand key types and scopes, and authenticate every request.
+  </Card>
+  <Card title="Apps" icon="window" href="/api/apps">
+    Create, list, update, and delete applications. Check app health status.
+  </Card>
+  <Card title="Deployments" icon="rocket" href="/api/deployments">
+    Trigger deployments, inspect their status, and roll back to a previous version.
+  </Card>
+  <Card title="Infrastructure" icon="server" href="/api/infrastructure">
+    View provisioned compute, databases, and storage. Scale instances up or down.
+  </Card>
+  <Card title="Logs" icon="scroll" href="/api/logs">
+    Query historical logs and stream live logs in real time over SSE.
+  </Card>
+</CardGroup>

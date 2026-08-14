@@ -1,0 +1,86 @@
+---
+title: "Performance and Cost Recommendations from App Intelligence"
+sidebarTitle: "Recommendations"
+description: "AI-generated recommendations that improve performance, reduce costs, strengthen reliability, and close security gaps based on your app's real behavior."
+---
+
+App Intelligence continuously analyzes your application's behavior and surfaces concrete, prioritized recommendations — not generic advice, but specific actions backed by data from your app. Each recommendation tells you what to change, why it matters, and what the expected impact is.
+
+## What recommendations cover
+
+Recommendations span four categories:
+
+- **Performance** — slow database queries, high API latency, inefficient caching, unoptimized asset delivery
+- **Cost** — over-provisioned compute or memory, idle resources, redundant infrastructure spend
+- **Reliability** — missing health checks, lack of retry logic, single points of failure, no circuit breakers
+- **Security** — exposed credentials in logs or env vars, missing authentication on routes, outdated dependencies with CVEs
+
+## Finding your recommendations
+
+Open the **Intelligence** tab in your app's control center and select the **Recommendations** panel. Recommendations are sorted by priority by default. Use the category filter to focus on performance, cost, reliability, or security issues independently.
+
+Each recommendation card shows:
+- The priority level (critical, high, medium, or low)
+- A plain-language title and explanation
+- The specific evidence behind the suggestion
+- The expected impact (time saved, cost reduced, error rate improvement)
+- A one-click **Apply** button or a **Review Change** option
+
+## Example recommendations
+
+Here are the kinds of recommendations App Intelligence surfaces:
+
+<CardGroup cols={1}>
+  <Card title="Reduce compute from 4 vCPU to 2 vCPU" icon="server">
+    Your app has used less than 30% CPU consistently over the past 14 days. Scaling down saves approximately **$45/month** with no expected impact on performance.
+  </Card>
+  <Card title="Add database index on users.email" icon="database">
+    The query `SELECT * FROM users WHERE email = ?` is taking an average of **800ms**. Adding an index on `users.email` is projected to reduce this to under 5ms.
+  </Card>
+  <Card title="Enable connection pooling" icon="circle-nodes">
+    Your app is opening **150 database connections** across 3 instances. Enabling PgBouncer-style connection pooling will reduce this to under 20 and free up database resources.
+  </Card>
+</CardGroup>
+
+## Applying a recommendation
+
+<Steps>
+  <Step title="Open the recommendation">
+    Click any recommendation card in the Recommendations panel to expand the full detail view, including the evidence, projected impact, and the exact change that will be made.
+  </Step>
+  <Step title="Review or apply">
+    Click **Review Change** to see a diff or config preview before anything is modified. When you're satisfied, click **Apply** — or click **Apply** directly on the card to apply without reviewing.
+  </Step>
+  <Step title="Monitor the result">
+    App Intelligence tracks the relevant metric after the change is applied and updates the recommendation status to **Resolved**, **Partially Resolved**, or **No Effect** based on what it observes.
+  </Step>
+</Steps>
+
+## Recommendation priority levels
+
+| Priority | What it means |
+|---|---|
+| **Critical** | Immediate action needed — active security vulnerability, ongoing outage risk, or significant ongoing cost waste |
+| **High** | Should be addressed soon — measurable performance impact or reliability gap affecting users |
+| **Medium** | Worth addressing in your next work cycle — meaningful improvement available with low effort |
+| **Low** | Nice to have — minor optimization or hygiene improvement |
+
+## How the AI learns over time
+
+App Intelligence builds a model of your application's normal behavior using a rolling baseline. As your app evolves — new routes, new traffic patterns, schema changes, updated dependencies — the AI updates its baseline and refines its recommendations accordingly.
+
+The longer your app runs on Antideploy, the more precise the recommendations become. Early recommendations are based on general patterns; over time, they reflect the specific characteristics of your workload.
+
+## Frequently asked questions
+
+<Accordion title="Can the AI modify my code?">
+  Only if you explicitly enable code-level fixes in your Intelligence permission settings. By default, recommendations are limited to configuration changes, resource adjustments, and infrastructure settings. Code-level suggestions are always shown as diffs for your review — the AI never commits changes to your repository without your approval.
+</Accordion>
+
+<Accordion title="How often are recommendations updated?">
+  The recommendations panel refreshes every hour. App Intelligence continuously analyzes your app in the background and adds or removes recommendations as conditions change. A recommendation that was relevant yesterday may be automatically resolved if the underlying issue corrects itself.
+</Accordion>
+
+<Accordion title="Can I dismiss recommendations?">
+  Yes. Click the **Dismiss** button on any recommendation card to remove it from your panel. You can choose to dismiss it permanently or snooze it for 7, 14, or 30 days. Dismissed recommendations are tracked in your audit log, and you can restore them at any time from **Intelligence → Dismissed Recommendations**.
+</Accordion>

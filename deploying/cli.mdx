@@ -1,0 +1,211 @@
+---
+title: "Deploy Applications with the Antideploy CLI"
+sidebarTitle: "CLI Deploy"
+description: "Install the Antideploy CLI to deploy apps, manage environments, and stream live logs — all without leaving your terminal."
+---
+
+The Antideploy CLI brings the full deployment workflow into your terminal. Run a single command to ship your current directory, target a specific environment, follow build progress in real time, and manage every aspect of your deployments without touching the dashboard. It's the fastest path from code change to live URL for developers who live in the command line.
+
+---
+
+## Install the CLI
+
+<CodeGroup>
+```bash npm
+npm install -g antideploy
+```
+
+```bash yarn
+yarn global add antideploy
+```
+
+```bash pnpm
+pnpm add -g antideploy
+```
+</CodeGroup>
+
+Verify the installation:
+
+```bash
+antideploy --version
+```
+
+<Note>
+  The CLI requires Node.js 18 or later. Run `node --version` to check your current version.
+</Note>
+
+---
+
+## Log in
+
+Authenticate the CLI with your Antideploy account:
+
+```bash
+antideploy login
+```
+
+This opens your browser and prompts you to authorize the CLI. After you approve, your credentials are stored locally and all subsequent commands run authenticated.
+
+For non-interactive environments (CI servers, Docker builds), log in with an API token instead:
+
+```bash
+antideploy login --token YOUR_API_TOKEN
+```
+
+Generate an API token in the dashboard under **Account → API Tokens**.
+
+---
+
+## Deploy your app
+
+Navigate to your project directory and run:
+
+```bash
+antideploy deploy
+```
+
+Antideploy analyzes your code, detects the framework, installs dependencies, builds your app, and deploys it. The terminal streams each stage as it runs and prints the live URL when the deployment succeeds.
+
+### Example output
+
+```
+antideploy deploy
+
+  ✔ Authenticated as alex@example.com
+  ✔ Project detected: my-api (id: proj_8xKq2m)
+  ✔ Files packaged (1,204 files, 3.2 MB)
+
+  Building...
+  ┌─────────────────────────────────────────────────────────┐
+  │ [1/3] Installing dependencies...           npm install  │
+  │ [2/3] Building application...              npm run build│
+  │ [3/3] Optimizing output...                              │
+  └─────────────────────────────────────────────────────────┘
+  ✔ Build completed in 42s
+
+  Deploying...
+  ✔ Infrastructure provisioned
+  ✔ Health checks passed
+  ✔ Traffic routed
+
+  🚀 Deployed to production
+  URL: https://my-api.antideploy.app
+  Deployment ID: dep_7rNp1w
+```
+
+---
+
+## Deploy options
+
+Customize your deployment with these flags:
+
+| Flag | Description | Example |
+|---|---|---|
+| `--name` | Set or override the app name | `--name my-api` |
+| `--env` | Target a specific environment | `--env staging` |
+| `--region` | Deploy to a specific region | `--region eu-west` |
+| `--follow` | Stream live logs after deploy | `--follow` |
+| `--no-build` | Skip the build step (deploy pre-built output) | `--no-build` |
+| `--yes` | Skip confirmation prompts | `--yes` |
+
+### Usage examples
+
+```bash
+# Deploy to production
+antideploy deploy
+
+# Deploy to staging environment
+antideploy deploy --env staging
+
+# Deploy with a specific app name
+antideploy deploy --name my-api
+
+# Deploy and watch logs
+antideploy deploy --follow
+```
+
+---
+
+## Deploy to staging vs production
+
+Antideploy supports multiple environments per project. Use the `--env` flag to target a specific one:
+
+```bash
+# Deploy to staging
+antideploy deploy --env staging
+
+# Deploy to production (default)
+antideploy deploy --env production
+```
+
+Each environment has its own URL, infrastructure, and environment variables. Staging deployments never affect production traffic. Once you've validated your staging deployment, promote it to production from the dashboard or with:
+
+```bash
+antideploy promote --from staging --to production
+```
+
+See [Environments](/deploying/environments) for the full promotion workflow.
+
+---
+
+## Watch deploy progress
+
+Add `--follow` to tail the build and runtime logs immediately after deployment:
+
+```bash
+antideploy deploy --follow
+```
+
+The terminal streams build output line by line, then switches to live application logs once the deployment is active. Press `Ctrl+C` to stop following logs — this does not stop or cancel the deployment.
+
+You can also follow logs for an existing deployment:
+
+```bash
+antideploy logs --follow
+antideploy logs --follow --env staging
+```
+
+---
+
+## Other useful commands
+
+```bash
+# List all deployments for the current project
+antideploy deployments list
+
+# Roll back to a previous deployment
+antideploy rollback dep_7rNp1w
+
+# Open the live app in your browser
+antideploy open
+
+# Open the dashboard for the current project
+antideploy open --dashboard
+
+# Show current project and environment info
+antideploy status
+```
+
+<Tip>
+  Run `antideploy --help` or `antideploy <command> --help` at any time to see all available options for a command.
+</Tip>
+
+---
+
+## Using the CLI in CI/CD pipelines
+
+The CLI works in any CI environment. Set the `ANTIDEPLOY_TOKEN` environment variable instead of running `antideploy login`:
+
+```bash
+# GitHub Actions example
+- name: Deploy to Antideploy
+  env:
+    ANTIDEPLOY_TOKEN: ${{ secrets.ANTIDEPLOY_TOKEN }}
+  run: |
+    npm install -g antideploy
+    antideploy deploy --env production --yes
+```
+
+<Warning>
+  Never commit your API token to source control. Always pass it through your CI platform's secrets management.
+</Warning>

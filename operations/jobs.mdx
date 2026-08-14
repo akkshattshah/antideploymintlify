@@ -1,0 +1,211 @@
+---
+title: "Background Workers, Cron Jobs, Queues, and Webhooks"
+sidebarTitle: "Jobs & Workers"
+description: "Run long-lived workers, schedule recurring cron tasks, process queued jobs, and receive webhook events — all managed and monitored inside Antideploy."
+---
+
+Not all work happens in response to HTTP requests. Antideploy supports the full range of background task patterns — persistent workers, scheduled cron jobs, async task queues, and inbound webhooks — so you can manage every part of your application's compute in one place.
+
+## Types of background tasks
+
+<CardGroup cols={2}>
+  <Card title="Background Workers" icon="gears">
+    Long-running processes that run continuously alongside your web server — ideal for consuming message queues or maintaining persistent connections.
+  </Card>
+  <Card title="Cron Jobs" icon="calendar-check">
+    Tasks triggered on a schedule using standard cron syntax. Antideploy guarantees at-most-once execution per scheduled interval.
+  </Card>
+  <Card title="Task Queues" icon="list-check">
+    Auto-provisioned when your app uses popular queue libraries. Antideploy manages the worker pool and retry logic.
+  </Card>
+  <Card title="Webhooks" icon="webhook">
+    Antideploy calls your endpoints when platform events occur — deploy success, failure, health changes, and more.
+  </Card>
+</CardGroup>
+
+## Background workers
+
+A background worker is a separate process that runs continuously next to your web server. It shares your app's environment variables and filesystem mounts but runs its own entry point command.
+
+Define workers in `antideploy.yaml`:
+
+```yaml
+workers:
+  - name: queue-consumer
+    command: "node workers/queue-consumer.js"
+    instances: 2          # run 2 parallel instances
+    restart_policy: always # restart immediately on exit
+  - name: websocket-relay
+    command: "node workers/ws-relay.js"
+    instances: 1
+```
+
+Each worker appears as a separate process group in the Antideploy control center with its own logs, metrics, and health status.
+
+<Note>
+  Workers do not receive HTTP traffic. If your worker needs to expose a health endpoint, use a TCP health check configured under `health_check.type: tcp` in your worker definition.
+</Note>
+
+## Cron jobs
+
+Schedule recurring tasks using standard five-field cron syntax. Antideploy runs each job in a fresh, short-lived container spun up at the scheduled time and tears it down when the command exits.
+
+```yaml
+# antideploy.yaml (optional config file)
+jobs:
+  - name: daily-report
+    schedule: "0 9 * * *"
+    command: "node scripts/daily-report.js"
+  - name: cleanup
+    schedule: "*/30 * * * *"
+    command: "node scripts/cleanup.js"
+```
+
+### Cron syntax reference
+
+| Field | Values | Example |
+|---|---|---|
+| Minute | 0–59 | `30` = at :30 past the hour |
+| Hour | 0–23 | `9` = 9 AM UTC |
+| Day of month | 1–31 | `1` = first of the month |
+| Month | 1–12 | `*` = every month |
+| Day of week | 0–6 (Sun=0) | `1` = Monday |
+
+<Tip>
+  All cron schedules run in UTC. If you need jobs in a local timezone, use an offset or convert to UTC before setting the schedule. [crontab.guru](https://crontab.guru) is a handy editor for building cron expressions.
+</Tip>
+
+### Triggering a job manually
+
+Run any scheduled job immediately from the CLI without waiting for its next scheduled time:
+
+```bash
+antideploy jobs run --app my-app --job daily-report
+```
+
+## Task queues
+
+When Antideploy detects that your app uses a supported task queue library (BullMQ, Celery, Sidekiq, and others), it automatically provisions the necessary infrastructure and surfaces queue metrics in the control center.
+
+<Tabs>
+  <Tab title="Node.js (BullMQ)">
+    ```javascript
+    import { Queue, Worker } from 'bullmq';
+    import { connection } from './redis'; // Antideploy injects REDIS_URL automatically
+
+    // Producer — add a job
+    const emailQueue = new Queue('emails', { connection });
+    await emailQueue.add('send-welcome', { userId: 'usr_abc123' });
+
+    // Consumer — process jobs
+    const worker = new Worker('emails', async (job) => {
+      await sendWelcomeEmail(job.data.userId);
+    }, { connection });
+    ```
+  </Tab>
+  <Tab title="Python (Celery)">
+    ```python
+    from celery import Celery
+    import os
+
+    app = Celery('tasks', broker=os.environ['REDIS_URL'])
+
+    @app.task
+    def send_welcome_email(user_id: str):
+        # Antideploy injects REDIS_URL automatically
+        send_email(user_id)
+    ```
+  </Tab>
+</Tabs>
+
+Antideploy displays queue depth, throughput (jobs/min), and error rate for each queue on the **Jobs** tab in the control center.
+
+## Webhooks
+
+Configure Antideploy to call your own HTTPS endpoints when platform events occur. This lets you trigger custom automation — Slack messages, JIRA tickets, deployment scripts — without polling the Antideploy API.
+
+### Supported webhook events
+
+| Event | Trigger |
+|---|---|
+| `deploy.success` | A deployment reaches **Live** status |
+| `deploy.failure` | A deployment transitions to **Failed** |
+| `deploy.rollback` | A rollback is initiated |
+| `health.degraded` | App instances begin failing health checks |
+| `health.recovered` | All instances pass health checks after a degraded period |
+| `job.failed` | A cron job or worker exits with a non-zero code |
+
+### Configuring webhooks
+
+Add webhook targets in `antideploy.yaml` or under **Settings → Webhooks** in the control center:
+
+```yaml
+webhooks:
+  - url: "https://yourapp.com/hooks/antideploy"
+    secret: "whsec_your_signing_secret"
+    events:
+      - deploy.success
+      - deploy.failure
+      - health.degraded
+```
+
+Antideploy sends a `POST` request to your URL with a JSON body and an `X-Antideploy-Signature` header (HMAC-SHA256, signed with your secret). Always verify the signature before processing the payload:
+
+```javascript
+import crypto from 'crypto';
+
+function verifySignature(payload, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(`sha256=${expected}`)
+  );
+}
+```
+
+## Monitoring job status and logs
+
+All background tasks — workers, cron jobs, and queue consumers — appear on the **Jobs** tab in the Antideploy control center with:
+
+- **Status**: running, idle, failed, or completed
+- **Last run**: timestamp and exit code of the most recent execution
+- **Duration**: how long each run took
+- **Logs**: full stdout/stderr output per run, searchable and filterable
+
+Access job logs from the CLI:
+
+```bash
+# Stream live logs from a worker
+antideploy logs --app my-app --process queue-consumer --follow
+
+# View logs from the last cron job run
+antideploy logs --app my-app --job daily-report --since 1h
+```
+
+## Retries and failure handling
+
+Configure retry behavior per job to handle transient failures without manual intervention:
+
+```yaml
+jobs:
+  - name: daily-report
+    schedule: "0 9 * * *"
+    command: "node scripts/daily-report.js"
+    retries: 3                  # retry up to 3 times on non-zero exit
+    retry_delay: 60             # seconds between retry attempts
+    timeout: 300                # kill the job after 5 minutes
+    on_failure: notify          # options: notify, ignore, restart
+
+workers:
+  - name: queue-consumer
+    command: "node workers/queue-consumer.js"
+    restart_policy: on-failure  # restart only when the process exits non-zero
+    max_restarts: 10            # stop restarting after 10 consecutive failures
+```
+
+<Warning>
+  A worker that restarts more than `max_restarts` times without a successful run is marked **degraded** and triggers an alert. Check its logs to identify the root cause before re-enabling it.
+</Warning>

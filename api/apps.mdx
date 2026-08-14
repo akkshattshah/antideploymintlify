@@ -1,0 +1,391 @@
+---
+title: "Apps API: Create, List, and Manage Applications"
+sidebarTitle: "Apps"
+description: "Use the Apps API to create, retrieve, update, and delete applications, and to check the real-time health status of any app."
+---
+
+The Apps API is the starting point for everything in Antideploy. An **app** is the top-level resource that represents a deployed application — it holds your configuration, points to your source code, and owns all deployments, infrastructure, and logs beneath it.
+
+All app endpoints are scoped to your organization and require a valid API key. See [Authentication](/api/authentication) for details.
+
+---
+
+## The app object
+
+```json
+{
+  "id": "app_abc123",
+  "name": "my-api",
+  "status": "running",
+  "url": "https://my-api.antideploy.app",
+  "environment": "production",
+  "created_at": "2024-01-10T09:00:00Z",
+  "updated_at": "2024-01-15T14:30:00Z"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique identifier for the app. Prefix: `app_`. |
+| `name` | string | Human-readable name. Used in the auto-generated URL. |
+| `status` | string | Current status: `running`, `deploying`, `stopped`, `error`. |
+| `url` | string | The public URL Antideploy assigned to this app. |
+| `environment` | string | Deployment environment: `production` or `preview`. |
+| `created_at` | string | ISO 8601 timestamp when the app was created. |
+| `updated_at` | string | ISO 8601 timestamp of the last settings change. |
+
+---
+
+## List all apps
+
+```
+GET /apps
+```
+
+Returns a paginated list of all apps in your organization.
+
+### Query parameters
+
+<ParamField query="limit" type="integer" default="20">
+  Number of apps to return. Maximum is `100`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from a previous response's `next_cursor`. Omit to start from the beginning.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Filter apps by name. Returns apps whose names contain the search string (case-insensitive).
+</ParamField>
+
+### Response fields
+
+<ResponseField name="items" type="array">
+  Array of app objects matching the query.
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string">
+  Cursor to pass as `cursor` to fetch the next page. `null` when there are no more results.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  `true` if additional pages exist beyond this response.
+</ResponseField>
+
+### Example
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  "https://api.antideploy.io/v1/apps?limit=10&search=api"
+```
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": "app_abc123",
+        "name": "my-api",
+        "status": "running",
+        "url": "https://my-api.antideploy.app",
+        "environment": "production",
+        "created_at": "2024-01-10T09:00:00Z",
+        "updated_at": "2024-01-15T14:30:00Z"
+      }
+    ],
+    "next_cursor": null,
+    "has_more": false
+  },
+  "error": null
+}
+```
+
+---
+
+## Create an app
+
+```
+POST /apps
+```
+
+Creates a new application. Antideploy provisions the app and makes it available immediately. To deploy code to it, use the [Deployments API](/api/deployments).
+
+### Request body
+
+<ParamField body="name" type="string" required>
+  Name for the app. Must be lowercase, alphanumeric, and hyphenated (e.g., `my-api`). Used to generate the app's URL.
+</ParamField>
+
+<ParamField body="source_type" type="string" required>
+  Where Antideploy should pull source code from. One of: `github`, `upload`, `cli`.
+</ParamField>
+
+<ParamField body="repo_url" type="string">
+  Required when `source_type` is `github`. The full HTTPS URL of the GitHub repository (e.g., `https://github.com/your-org/your-repo`).
+</ParamField>
+
+<ParamField body="environment" type="string" default="production">
+  Deployment environment. Either `production` or `preview`.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the newly created app. Prefix: `app_`.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The name you provided, normalized to lowercase.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial status of the app. Will be `stopped` until the first deployment.
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  The public URL assigned to this app.
+</ResponseField>
+
+<ResponseField name="environment" type="string">
+  The environment (`production` or `preview`).
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of creation.
+</ResponseField>
+
+### Example
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-api",
+    "source_type": "github",
+    "repo_url": "https://github.com/your-org/my-api"
+  }' \
+  https://api.antideploy.io/v1/apps
+```
+
+```json
+{
+  "data": {
+    "id": "app_abc123",
+    "name": "my-api",
+    "status": "stopped",
+    "url": "https://my-api.antideploy.app",
+    "environment": "production",
+    "created_at": "2024-01-10T09:00:00Z",
+    "updated_at": "2024-01-10T09:00:00Z"
+  },
+  "error": null
+}
+```
+
+---
+
+## Get an app
+
+```
+GET /apps/{app_id}
+```
+
+Returns the full details of a single app.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app (e.g., `app_abc123`).
+</ParamField>
+
+### Example
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  https://api.antideploy.io/v1/apps/app_abc123
+```
+
+```json
+{
+  "data": {
+    "id": "app_abc123",
+    "name": "my-api",
+    "status": "running",
+    "url": "https://my-api.antideploy.app",
+    "environment": "production",
+    "created_at": "2024-01-10T09:00:00Z",
+    "updated_at": "2024-01-15T14:30:00Z"
+  },
+  "error": null
+}
+```
+
+---
+
+## Update an app
+
+```
+PATCH /apps/{app_id}
+```
+
+Updates the name or scaling configuration of an app. Only the fields you provide are updated — omitted fields remain unchanged.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app to update.
+</ParamField>
+
+### Request body
+
+<ParamField body="name" type="string">
+  New name for the app. Updating the name also updates the app's URL.
+</ParamField>
+
+<ParamField body="scaling" type="object">
+  Scaling configuration object. See the [Infrastructure API](/api/infrastructure) for full scaling options.
+</ParamField>
+
+<ParamField body="scaling.min_instances" type="integer">
+  Minimum number of running instances. Must be at least `1`.
+</ParamField>
+
+<ParamField body="scaling.max_instances" type="integer">
+  Maximum number of instances to scale up to. Must be greater than or equal to `min_instances`.
+</ParamField>
+
+### Example
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-api-v2"}' \
+  https://api.antideploy.io/v1/apps/app_abc123
+```
+
+```json
+{
+  "data": {
+    "id": "app_abc123",
+    "name": "my-api-v2",
+    "status": "running",
+    "url": "https://my-api-v2.antideploy.app",
+    "environment": "production",
+    "created_at": "2024-01-10T09:00:00Z",
+    "updated_at": "2024-01-16T10:00:00Z"
+  },
+  "error": null
+}
+```
+
+<Note>
+  Renaming an app changes its URL. Update any DNS, environment variables, or integrations that reference the old URL before renaming.
+</Note>
+
+---
+
+## Delete an app
+
+```
+DELETE /apps/{app_id}
+```
+
+Permanently deletes an app and all associated resources — deployments, infrastructure, and logs. This action is irreversible.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app to delete.
+</ParamField>
+
+### Example
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  https://api.antideploy.io/v1/apps/app_abc123
+```
+
+A successful deletion returns `200 OK` with an empty `data` object:
+
+```json
+{
+  "data": {},
+  "error": null
+}
+```
+
+<Warning>
+  Deleting an app immediately tears down all running instances and removes all deployment history. There is no soft-delete or recovery option.
+</Warning>
+
+---
+
+## Get app health
+
+```
+GET /apps/{app_id}/health
+```
+
+Returns the current health status of all running instances of an app. Use this endpoint to power status dashboards or health-check scripts.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app to check.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="status" type="string">
+  Aggregate health: `healthy`, `degraded`, or `unhealthy`.
+</ResponseField>
+
+<ResponseField name="instances_total" type="integer">
+  Total number of running instances.
+</ResponseField>
+
+<ResponseField name="instances_healthy" type="integer">
+  Number of instances passing health checks.
+</ResponseField>
+
+<ResponseField name="last_checked_at" type="string">
+  ISO 8601 timestamp of the most recent health check.
+</ResponseField>
+
+<ResponseField name="checks" type="array">
+  Array of individual check results. Each item has `name`, `status` (`pass` or `fail`), and `message`.
+</ResponseField>
+
+### Example
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  https://api.antideploy.io/v1/apps/app_abc123/health
+```
+
+```json
+{
+  "data": {
+    "status": "healthy",
+    "instances_total": 2,
+    "instances_healthy": 2,
+    "last_checked_at": "2024-01-15T14:35:00Z",
+    "checks": [
+      {
+        "name": "http",
+        "status": "pass",
+        "message": "GET / responded 200 in 42ms"
+      },
+      {
+        "name": "memory",
+        "status": "pass",
+        "message": "Memory usage at 38% of limit"
+      }
+    ]
+  },
+  "error": null
+}
+```

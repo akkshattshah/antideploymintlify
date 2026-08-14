@@ -1,0 +1,115 @@
+---
+title: "AI Diagnostics: Root Cause Analysis and Auto-Fix"
+sidebarTitle: "Diagnostics"
+description: "AI-powered diagnostics that analyze your logs, errors, and performance data to identify root causes and propose or apply automatic fixes."
+---
+
+When your app is misbehaving, the first question is always *why*. App Intelligence diagnostics answer that question by analyzing your recent errors, logs, performance signals, and deployment history together — and producing a structured report that tells you exactly what went wrong and how to fix it.
+
+## Triggering a diagnostic
+
+### From the dashboard
+
+Open the **Intelligence** tab in your app's control center and click **Run Diagnostics**. The analysis runs in the background and the report appears in the **Diagnostics** panel, typically within 30–90 seconds depending on log volume.
+
+### From the CLI
+
+```bash
+# Run a one-time diagnostic and print the report
+antideploy diagnose --app my-app
+
+# Run diagnostics and re-run every 5 minutes
+antideploy diagnose --app my-app --watch
+```
+
+### From the API
+
+Send a `POST` request to trigger a diagnostic programmatically — useful for integrating into your CI/CD pipeline or incident response runbooks.
+
+```bash
+curl -X POST https://api.antideploy.app/v1/apps/app_abc123/diagnostics \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY"
+```
+
+## What diagnostics analyze
+
+Each diagnostic run examines the following signals from the past rolling window (default: 2 hours, configurable up to 7 days):
+
+- **Runtime errors** — exception types, stack traces, frequency, and affected routes
+- **Application logs** — anomalous patterns, repeated warnings, correlated events
+- **Performance degradation** — p50/p95/p99 latency shifts, throughput drops, timeout rates
+- **Failed deployments** — build errors, health check failures, rollback triggers
+- **Resource exhaustion** — memory growth, CPU saturation, disk pressure, connection pool saturation
+- **Dependency failures** — database connectivity, third-party API error rates, cache misses
+
+## Reading a diagnostic report
+
+A diagnostic report contains one or more issues, each with the following fields:
+
+| Field | Description |
+|---|---|
+| `severity` | `critical`, `high`, `medium`, or `low` |
+| `title` | Short description of the issue |
+| `root_cause` | The specific cause the AI identified |
+| `evidence` | Concrete data points supporting the conclusion |
+| `confidence` | A 0–1 score indicating how certain the AI is |
+| `fix_available` | Whether the AI can propose or apply a fix |
+
+### Example diagnostic report (API response)
+
+```json
+{
+  "id": "diag_xyz789",
+  "app_id": "app_abc123",
+  "status": "complete",
+  "issues": [
+    {
+      "severity": "high",
+      "title": "Memory leak in request handler",
+      "root_cause": "Unclosed database connections in /api/users route",
+      "evidence": ["memory grew 400MB over 2h", "db connection pool at 98%"],
+      "confidence": 0.92,
+      "fix_available": true
+    }
+  ],
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+<Note>
+  A confidence score above 0.85 means the AI has strong evidence for the root cause. Scores below 0.6 indicate the AI has surfaced a likely contributor but recommends manual review before acting.
+</Note>
+
+## Acting on a diagnostic
+
+Once a report is ready, you have three options for each issue:
+
+<Steps>
+  <Step title="Review the evidence">
+    Read the root cause, evidence list, and confidence score. Click **View Trace** to open the correlated log lines, error stack, and metric charts that the AI used to reach its conclusion.
+  </Step>
+  <Step title="Choose how to respond">
+    For each issue with `fix_available: true`, you can:
+    - **Apply fix manually** — the AI shows you exactly what it would change (a config value, a code patch, a resource setting) and you apply it yourself.
+    - **Approve AI-proposed fix** — review the specific change the AI will make, then click **Approve** to let it apply the fix on your behalf.
+    - **Set to auto-apply** — promote this fix category to automatic for future occurrences (requires Auto-Fix with Approval or Fully Autonomous permission level).
+  </Step>
+  <Step title="Confirm and monitor">
+    After a fix is applied, App Intelligence monitors the relevant metrics for 15 minutes and flags the issue as resolved or escalates if the fix did not have the expected effect.
+  </Step>
+</Steps>
+
+## Diagnostic history and audit trail
+
+Every diagnostic run is stored in the **Diagnostics History** panel under the Intelligence tab. For each run you can see:
+
+- The timestamp and trigger source (manual, scheduled, or API)
+- All issues found and their severity
+- Which fixes were applied, by whom, and when
+- Whether each fix resolved the issue
+
+The audit trail is append-only. Every action taken based on a diagnostic — whether by you or by the AI — is recorded with a timestamp, actor, and the exact change made. You can export the full history as JSON or CSV from **Settings → Audit Log**.
+
+<Tip>
+  Schedule a daily diagnostic run by enabling **Scheduled Diagnostics** in the Intelligence settings panel. Set the frequency and the time window to analyze, and reports will land in your dashboard every morning.
+</Tip>

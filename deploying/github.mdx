@@ -1,0 +1,114 @@
+---
+title: "Deploy from GitHub with Automatic CI/CD"
+sidebarTitle: "GitHub"
+description: "Connect any GitHub repo to Antideploy and get automatic deployments on every push, plus instant preview URLs for every pull request."
+---
+
+Connecting a GitHub repository is the fastest way to ship continuously with Antideploy. Once linked, every push to your chosen branch triggers a new deployment automatically — no manual steps, no scripts to maintain. Antideploy detects your framework, installs dependencies, builds your app, and routes live traffic, all without configuration in most cases.
+
+## Prerequisites
+
+- An Antideploy account with at least one project created
+- A GitHub account with access to the repository you want to deploy
+- The repository must contain a deployable application (Antideploy supports all major frameworks and runtimes)
+
+---
+
+## Connect your GitHub repository
+
+<Steps>
+  <Step title="Open your project's Deploy settings">
+    In the Antideploy dashboard, navigate to your project and select **Settings → Deploy**. Under **Deployment source**, click **Connect GitHub**.
+  </Step>
+
+  <Step title="Install the Antideploy GitHub App">
+    You'll be redirected to GitHub to install the **Antideploy GitHub App**. Choose whether to grant access to **all repositories** or **select repositories only** (recommended for teams). Click **Install & Authorize** to continue.
+
+    <Note>
+      You need **Owner** or **Admin** permissions on the GitHub organization or personal account to install the App. Ask your org admin if you don't see the option.
+    </Note>
+  </Step>
+
+  <Step title="Select a repository">
+    After authorizing, return to the Antideploy dashboard. Use the repository search to find and select the repo you want to deploy. You can filter by organization or personal account using the account selector at the top of the list.
+  </Step>
+
+  <Step title="Choose your production branch">
+    Select the branch Antideploy should treat as **production** — typically `main` or `master`. Every push to this branch will trigger a production deployment. You can change this at any time in **Settings → Deploy**.
+  </Step>
+
+  <Step title="Review build settings and deploy">
+    Antideploy automatically detects your framework and populates the build command and output directory. Confirm the settings (or adjust them — see [Build settings](#build-settings) below), then click **Deploy**. Your first deployment starts immediately.
+  </Step>
+</Steps>
+
+---
+
+## Auto-deploy on push
+
+After the initial connection, every push to your production branch triggers a deployment automatically. Antideploy clones the latest commit, runs your build, and swaps traffic to the new version once the build succeeds.
+
+If a build fails, the previous deployment stays live and you receive a notification with the build log. No downtime occurs due to a failed push.
+
+<Tip>
+  You can temporarily pause auto-deploys from **Settings → Deploy → Auto-deploy** without disconnecting the repository. This is useful during planned freezes or incident response.
+</Tip>
+
+---
+
+## Deploy previews for pull requests
+
+Every pull request opened against your production branch automatically receives its own **preview deployment** with a unique URL. The URL is posted as a comment on the pull request by the Antideploy GitHub App.
+
+Preview deployments:
+- Use the same build pipeline as production
+- Inherit your staging environment variables by default (configurable per project)
+- Are destroyed automatically when the pull request is closed or merged
+- Can be promoted directly to production without a rebuild
+
+<Note>
+  Preview URLs are publicly accessible by default. Enable **Preview authentication** in **Settings → Security** to require a password for all preview deployments.
+</Note>
+
+---
+
+## Build settings
+
+Antideploy auto-detects the correct build settings for most frameworks. If your project requires custom settings, navigate to **Settings → Build** to configure them manually.
+
+| Setting | Description | Default |
+|---|---|---|
+| **Build command** | The command used to compile your app | Detected from framework |
+| **Output directory** | The folder containing the production build | Detected from framework |
+| **Install command** | Package installation command | `npm install` |
+| **Node version** | Node.js version for the build environment | LTS |
+
+<Tip>
+  Override build settings per-branch by adding an `antideploy.json` file to your repository root. Settings in this file take precedence over dashboard configuration.
+</Tip>
+
+---
+
+## Environment-specific branches
+
+Map different branches to different environments to create a full promotion workflow:
+
+| Branch | Environment | URL pattern |
+|---|---|---|
+| `main` | Production | `yourapp.antideploy.app` |
+| `dev` | Staging | `yourapp-staging.antideploy.app` |
+| Pull requests | Preview | `yourapp-pr-42.antideploy.app` |
+
+To add a branch-to-environment mapping, go to **Settings → Environments** and click **Add branch mapping**. Select the branch, choose the target environment, and save.
+
+<Note>
+  Each environment has its own set of environment variables and secrets. See [Environments](/deploying/environments) for full details on managing per-environment configuration.
+</Note>
+
+---
+
+## Managing the GitHub App installation
+
+To update which repositories the Antideploy GitHub App can access, go to **GitHub → Settings → Applications → Antideploy** and click **Configure**. Changes take effect immediately — no redeployment required.
+
+To disconnect a repository, open the project in Antideploy and go to **Settings → Deploy → Disconnect**. This stops future auto-deploys but does not delete existing deployments or infrastructure.

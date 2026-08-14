@@ -1,13 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
+  "projectType": "saas",
+  "projectName": "Antideploy",
+  "projectDescription": "An application deployment and operations platform that automatically provisions, manages, and operates every infrastructure component your app needs — from build to production.",
   "theme": "aspen",
-  "name": "Antideploy",
-  "colors": {
-    "primary": "#ef7025",
-    "light": "#eec9bc",
-    "dark": "#4fa1ab"
-  },
-  "favicon": "/favicon.svg",
+  "primaryColor": "#ef7025",
+  "lightColor": "#eec9bc",
+  "darkColor": "#4fa1ab",
   "navigation": {
     "tabs": [
       {
@@ -102,23 +100,40 @@
       }
     ]
   },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:support@antideploy.io"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Get Started",
-      "href": "https://app.antideploy.io"
-    }
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/antideploy",
-      "github": "https://github.com/antideploy"
-    }
-  }
+  "keyFeatures": [
+    "Zero-config deployment from GitHub, ZIP upload, CLI, or API",
+    "Automatic codebase analysis and infrastructure provisioning",
+    "Managed PostgreSQL, object storage, compute, networking, and SSL",
+    "Staging and production environments with one-click rollbacks",
+    "Unified control center with logs, metrics, errors, costs, and health",
+    "App Intelligence layer for AI-driven diagnostics and recommendations",
+    "Background workers, cron jobs, queues, and webhooks",
+    "Auto-scaling and cost optimization",
+    "Full REST API, CLI, and MCP/AI-agent integrations",
+    "Secrets and environment variable management"
+  ],
+  "publicApiSurface": [
+    "POST /apps — create and deploy a new application",
+    "GET /apps/{id} — retrieve application details",
+    "POST /apps/{id}/deployments — trigger a deployment",
+    "GET /apps/{id}/deployments — list deployment history",
+    "POST /apps/{id}/rollback — rollback to a previous deployment",
+    "GET /apps/{id}/logs — stream or query application logs",
+    "GET /apps/{id}/metrics — retrieve performance metrics",
+    "POST /apps/{id}/scale — adjust compute resources",
+    "GET /apps/{id}/infrastructure — inspect provisioned resources",
+    "POST /apps/{id}/env — set environment variables and secrets",
+    "GET /apps/{id}/health — application health status",
+    "POST /apps/{id}/diagnose — trigger AI diagnostics",
+    "antideploy deploy — deploy current directory",
+    "antideploy logs — tail live logs",
+    "antideploy rollback — rollback last deployment",
+    "antideploy scale — adjust scaling parameters",
+    "antideploy env set/get — manage environment variables",
+    "MCP tool: deploy_app",
+    "MCP tool: get_logs",
+    "MCP tool: check_health",
+    "MCP tool: rollback_deployment",
+    "MCP tool: diagnose_app"
+  ]
 }

@@ -1,47 +1,133 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Your App Live in Under 5 Minutes"
+sidebarTitle: "Quickstart"
+description: "Connect your repo, run one CLI command, or upload a ZIP — Antideploy analyzes your code and deploys it to production automatically."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+Antideploy gets your application live without any infrastructure configuration. Pick the deployment method that fits your workflow: connect a GitHub repository, use the CLI from your terminal, or upload a ZIP directly from the dashboard. All three paths produce the same result — a production deployment with a live URL, SSL certificate, and full monitoring.
 
 ## Prerequisites
 
-Before you begin, you must have:
+- An Antideploy account — [create one free at app.antideploy.io](https://app.antideploy.io)
+- An application codebase (any language, any framework)
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+That's it. You don't need a Dockerfile, a cloud account, or any infrastructure knowledge.
 
-## Get started
+---
+
+## Method 1: GitHub Integration (Recommended)
+
+Connecting GitHub is the fastest path to continuous deployment. Every push to your chosen branch triggers an automatic redeploy.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Connect your GitHub account">
+    In the [Antideploy dashboard](https://app.antideploy.io), click **New App**, then select **Import from GitHub**. Authorize Antideploy to access your repositories when prompted.
+  </Step>
+  <Step title="Select your repository">
+    Search for or scroll to the repository containing your application. Click **Import**.
+  </Step>
+  <Step title="Review the detected configuration">
+    Antideploy analyzes your code immediately and displays what it detected — framework, runtime, database requirements, and any background services. Review the summary and click **Deploy** to confirm.
 
+    <Note>
+      You can override any detected setting before deploying — for example, to pin a specific Node.js version or change the build command. Most apps deploy without any changes.
+    </Note>
+  </Step>
+  <Step title="Watch the build and deploy">
+    The build log streams in real time. Antideploy provisions infrastructure, runs your build, and deploys your app. The whole process typically takes 60–120 seconds.
+  </Step>
+  <Step title="Visit your live app">
+    When the deployment completes, your app is live at a `*.antideploy.app` subdomain. The dashboard shows your URL, build logs, and monitoring metrics.
+  </Step>
+</Steps>
+
+---
+
+## Method 2: CLI Deploy
+
+The CLI is the fastest path from your local machine to production. Use it for first deploys, one-off pushes, or scripted workflows.
+
+<Steps>
+  <Step title="Install the Antideploy CLI">
     ```bash
-    npm install your-package
+    npm install -g antideploy
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
-
+  <Step title="Log in to your account">
     ```bash
-    your-cli init
+    antideploy login
     ```
+    This opens a browser window for authentication and stores your credentials locally.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
-
+  <Step title="Run deploy from your project directory">
+    Navigate to your project root and run:
     ```bash
-    your-cli start
+    antideploy deploy
+    ```
+    The CLI reads your code, infers the required configuration, and uploads your project to Antideploy.
+  </Step>
+  <Step title="Watch the deployment complete">
+    Output streams directly in your terminal:
+    ```
+    ✓ Detected: Next.js 14, Node 20
+    ✓ Provisioning compute (2 vCPU, 512MB)
+    ✓ Provisioning PostgreSQL database
+    ✓ Building application...
+    ✓ Deploying to production
+    ✓ SSL certificate issued
+
+    🚀 Live at https://my-app.antideploy.app
+       Dashboard: https://app.antideploy.io/apps/app_abc123
     ```
   </Step>
 </Steps>
 
 <Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
-
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+  Run `antideploy deploy --env production` or `--env staging` to target a specific environment. Antideploy creates isolated environments with their own infrastructure and URLs.
 </Tip>
+
+---
+
+## Method 3: ZIP Upload via Dashboard
+
+If you're working with generated code, an export from a no-code tool, or a project that isn't in a Git repository, upload it directly.
+
+<Steps>
+  <Step title="Export or archive your project">
+    Zip your project directory, including all source files. You don't need to include `node_modules`, `.venv`, or other dependency directories — Antideploy installs dependencies during the build.
+  </Step>
+  <Step title="Open the dashboard and create a new app">
+    Go to [app.antideploy.io](https://app.antideploy.io), click **New App**, and select **Upload ZIP**.
+  </Step>
+  <Step title="Upload your archive">
+    Drag your ZIP file onto the upload area or click to browse. Antideploy begins analyzing your code as soon as the upload finishes.
+  </Step>
+  <Step title="Confirm the detected configuration and deploy">
+    Review the detected framework and infrastructure requirements, then click **Deploy**. Your app will be live within a few minutes.
+  </Step>
+</Steps>
+
+---
+
+## After Your First Deploy
+
+Once your app is live, Antideploy activates the full operations stack automatically:
+
+<CardGroup cols={2}>
+  <Card title="Live URL & Custom Domain" icon="globe">
+    Your app gets a `*.antideploy.app` URL instantly. Add your own domain in the dashboard — DNS verification and SSL issuance happen automatically.
+  </Card>
+  <Card title="Logs & Metrics" icon="chart-bar">
+    Build logs, runtime logs, request metrics, and error rates are available in the dashboard from the first request. No setup required.
+  </Card>
+  <Card title="Automatic Redeployment" icon="arrows-rotate">
+    Push a new commit (GitHub integration) or run `antideploy deploy` again to trigger a zero-downtime redeployment. Previous versions are kept for instant rollback.
+  </Card>
+  <Card title="App Intelligence" icon="brain">
+    Antideploy's App Intelligence layer monitors your application in context. If something breaks, it surfaces the cause and suggests a fix in plain language.
+  </Card>
+</CardGroup>
+
+<Note>
+  Your first deployment provisions a free-tier environment. You can upgrade compute, storage, and database resources from the dashboard at any time without redeploying.
+</Note>

@@ -1,0 +1,144 @@
+---
+title: "Auto-Scaling and Manual Resource Adjustment"
+sidebarTitle: "Scaling"
+description: "Antideploy scales your app automatically based on traffic, CPU, and latency — with manual controls to set instance counts and compute resources at any time."
+---
+
+Antideploy manages capacity for you. When traffic spikes, new instances spin up to absorb the load. When traffic drops, instances scale back down to keep costs low. You set the boundaries; Antideploy handles everything in between.
+
+## Auto-scaling
+
+Auto-scaling is enabled by default for every app. Antideploy monitors your app continuously and adds or removes instances based on live demand signals.
+
+### What triggers a scale-up
+
+Antideploy evaluates the following metrics on a rolling 60-second window and scales up when any threshold is breached:
+
+<CardGroup cols={3}>
+  <Card title="CPU utilization" icon="microchip">
+    Average CPU across all instances exceeds **70%** sustained for 60 seconds.
+  </Card>
+  <Card title="Request queue depth" icon="list">
+    Pending requests waiting for an available instance exceed **20** for 30 seconds.
+  </Card>
+  <Card title="P95 latency" icon="clock">
+    Ninety-fifth percentile response time exceeds your configured latency target.
+  </Card>
+</CardGroup>
+
+Scale-down happens when all three metrics fall below their thresholds for a sustained 5-minute window, preventing thrashing from short traffic bursts.
+
+## Scale-to-zero
+
+Staging and preview environments can scale all the way to zero instances when idle. The first request after an idle period triggers a cold start (typically under 3 seconds). Enable scale-to-zero in your app settings or config:
+
+```yaml
+# antideploy.yaml
+scaling:
+  min_instances: 0   # 0 enables scale-to-zero
+  max_instances: 5
+```
+
+<Warning>
+  Do not enable scale-to-zero for production environments where cold-start latency is unacceptable. Use a minimum instance count of at least `1` in production.
+</Warning>
+
+## Setting minimum and maximum instance counts
+
+Define the boundaries within which auto-scaling operates:
+
+```yaml
+# antideploy.yaml
+scaling:
+  min_instances: 2    # always keep at least 2 instances running
+  max_instances: 20   # never exceed 20 instances
+```
+
+<Note>
+  Setting `min_instances` to `2` or higher also improves resilience — if one instance fails its health check, traffic continues flowing to the remaining instance while the failed one restarts.
+</Note>
+
+## Manual scaling from the dashboard
+
+Adjust compute resources without redeploying your code:
+
+<Steps>
+  <Step title="Open your app">
+    Navigate to your app in the Antideploy control center and click the **Scaling** tab.
+  </Step>
+  <Step title="Edit resources">
+    Click **Edit Resources** to open the resource editor. Adjust instance count, CPU cores, or memory using the sliders or text inputs.
+  </Step>
+  <Step title="Apply changes">
+    Click **Apply**. Antideploy applies the new resource configuration to running instances with a rolling restart — no downtime.
+  </Step>
+</Steps>
+
+## Scaling from the CLI
+
+```bash
+# Set auto-scaling bounds
+antideploy scale --app my-app --min 2 --max 10
+
+# Adjust CPU and memory per instance
+antideploy scale --app my-app --cpu 4 --memory 2048
+```
+
+Available `scale` flags:
+
+| Flag | Description |
+|---|---|
+| `--min <n>` | Minimum number of instances |
+| `--max <n>` | Maximum number of instances |
+| `--instances <n>` | Pin to an exact instance count (disables auto-scaling) |
+| `--cpu <cores>` | vCPU cores per instance (e.g., `1`, `2`, `4`) |
+| `--memory <mb>` | Memory in MB per instance (e.g., `512`, `1024`, `2048`) |
+
+<Tip>
+  Run `antideploy scale --app my-app` with no flags to print the current scaling configuration and live instance count.
+</Tip>
+
+## Cost implications
+
+Scaling directly affects your bill. Antideploy charges based on instance-hours — the number of instances running multiplied by time.
+
+<CardGroup cols={2}>
+  <Card title="Lower your minimum" icon="arrow-down">
+    Reducing `min_instances` to `1` (or `0` for non-production) is the fastest way to cut idle costs on low-traffic apps.
+  </Card>
+  <Card title="Right-size your instances" icon="sliders">
+    Over-provisioned CPU and memory costs money even when underutilized. Start small and scale up based on observed metrics rather than guessing upfront.
+  </Card>
+</CardGroup>
+
+Use the **Cost Explorer** under **Settings → Billing** to see a breakdown of spend by app, environment, and resource type. The page also shows projected monthly cost based on your current scaling configuration and recent usage patterns.
+
+## Scaling database connections in tandem
+
+Adding more app instances increases the number of concurrent database connections. Most databases have a hard connection limit — exceeding it causes errors even when the app is healthy.
+
+Antideploy surfaces current database connection usage on the **Metrics** dashboard. When you scale out, watch the **DB Connections** chart to ensure you stay within your database's limit.
+
+<Tabs>
+  <Tab title="Connection pooling">
+    The most effective mitigation is a connection pooler like PgBouncer (for PostgreSQL) or a built-in ORM pool. Configure your app to use a pool sized to `(max_instances × workers_per_instance)` and set a conservative `max_connections` in your ORM.
+
+    ```javascript
+    // Prisma example — size the pool relative to expected instances
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL + '?connection_limit=5'
+        }
+      }
+    });
+    ```
+  </Tab>
+  <Tab title="Managed connection pooling">
+    If your app connects to a Antideploy-managed PostgreSQL database, connection pooling via PgBouncer is available as a one-click add-on under **Databases → your-db → Pooling**. Enable it and update your `DATABASE_URL` to point to the pooler endpoint instead of the database directly.
+  </Tab>
+</Tabs>
+
+<Note>
+  As a general rule, allow no more than 10 connections per app instance and upgrade your database tier before increasing `max_instances` beyond that limit.
+</Note>

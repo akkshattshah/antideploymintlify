@@ -1,0 +1,317 @@
+---
+title: "Deployments API: Trigger, List, and Rollback"
+sidebarTitle: "Deployments"
+description: "Use the Deployments API to trigger new deploys, inspect deployment status and history, and roll back to any previous version of your app."
+---
+
+A **deployment** represents a single release of your application — a snapshot of your code at a point in time, built, containerized, and served by Antideploy. Every time you push new code or manually trigger a deploy, a new deployment record is created.
+
+Deployments are scoped to an app. To work with deployments you need the app's ID, which you can get from the [Apps API](/api/apps).
+
+---
+
+## The deployment object
+
+```json
+{
+  "id": "dep_xyz789",
+  "app_id": "app_abc123",
+  "status": "live",
+  "commit_sha": "a3f2b9c",
+  "commit_message": "Add payment integration",
+  "triggered_by": "user@example.com",
+  "duration_seconds": 47,
+  "created_at": "2024-01-15T14:00:00Z",
+  "live_at": "2024-01-15T14:00:47Z"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique identifier for the deployment. Prefix: `dep_`. |
+| `app_id` | string | ID of the app this deployment belongs to. |
+| `status` | string | Current status: `queued`, `building`, `live`, `failed`, `superseded`. |
+| `commit_sha` | string | The Git commit SHA that was deployed. Short form (7 characters). |
+| `commit_message` | string | The commit message associated with `commit_sha`. |
+| `triggered_by` | string | Email of the user or name of the integration that triggered this deployment. |
+| `duration_seconds` | integer | Total seconds from build start to live. `null` if the deployment has not finished. |
+| `created_at` | string | ISO 8601 timestamp when the deployment was queued. |
+| `live_at` | string | ISO 8601 timestamp when the deployment went live. `null` if not yet live. |
+
+---
+
+## List deployments
+
+```
+GET /apps/{app_id}/deployments
+```
+
+Returns a paginated list of deployments for an app, ordered from newest to oldest.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app whose deployments you want to list.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="limit" type="integer" default="20">
+  Number of deployments to return. Maximum is `100`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from a previous response's `next_cursor`.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by deployment status. One of: `queued`, `building`, `live`, `failed`, `superseded`. Omit to return all statuses.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="items" type="array">
+  Array of deployment objects.
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string">
+  Cursor for the next page. `null` when there are no more results.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  `true` if additional pages exist.
+</ResponseField>
+
+### Example
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  "https://api.antideploy.io/v1/apps/app_abc123/deployments?limit=5&status=live"
+```
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": "dep_xyz789",
+        "app_id": "app_abc123",
+        "status": "live",
+        "commit_sha": "a3f2b9c",
+        "commit_message": "Add payment integration",
+        "triggered_by": "user@example.com",
+        "duration_seconds": 47,
+        "created_at": "2024-01-15T14:00:00Z",
+        "live_at": "2024-01-15T14:00:47Z"
+      }
+    ],
+    "next_cursor": "cur_dep_prev",
+    "has_more": true
+  },
+  "error": null
+}
+```
+
+---
+
+## Trigger a deployment
+
+```
+POST /apps/{app_id}/deployments
+```
+
+Triggers a new deployment for an app. Antideploy queues the build immediately and returns the new deployment object. The deployment runs asynchronously — poll [Get a deployment](#get-a-deployment) or subscribe to [live logs](/api/logs) to follow its progress.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app to deploy.
+</ParamField>
+
+### Request body
+
+<ParamField body="source" type="string" default="latest">
+  Which version of the code to deploy. Use `latest` to deploy the most recent commit on the default branch, or provide a full Git commit SHA (e.g., `a3f2b9c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9`) to deploy a specific commit.
+</ParamField>
+
+<ParamField body="environment" type="string" default="production">
+  The environment to deploy to. Either `production` or `preview`.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the new deployment.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial status of the deployment. Will be `queued` immediately after creation.
+</ResponseField>
+
+<ResponseField name="commit_sha" type="string">
+  The commit SHA that will be built and deployed.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp when the deployment was queued.
+</ResponseField>
+
+### Example
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"source": "latest", "environment": "production"}' \
+  https://api.antideploy.io/v1/apps/app_abc123/deployments
+```
+
+```json
+{
+  "data": {
+    "id": "dep_new001",
+    "app_id": "app_abc123",
+    "status": "queued",
+    "commit_sha": "b4c5d6e",
+    "commit_message": "Fix checkout bug",
+    "triggered_by": "user@example.com",
+    "duration_seconds": null,
+    "created_at": "2024-01-16T09:00:00Z",
+    "live_at": null
+  },
+  "error": null
+}
+```
+
+<Tip>
+  After triggering a deployment, you can stream its build logs in real time by calling `GET /apps/{app_id}/logs/stream` — see the [Logs API](/api/logs).
+</Tip>
+
+---
+
+## Get a deployment
+
+```
+GET /apps/{app_id}/deployments/{deployment_id}
+```
+
+Returns the full details of a single deployment. Poll this endpoint to track the progress of an in-flight deployment.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app.
+</ParamField>
+
+<ParamField path="deployment_id" type="string" required>
+  The unique ID of the deployment (e.g., `dep_xyz789`).
+</ParamField>
+
+### Example
+
+```bash
+curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  https://api.antideploy.io/v1/apps/app_abc123/deployments/dep_xyz789
+```
+
+```json
+{
+  "data": {
+    "id": "dep_xyz789",
+    "app_id": "app_abc123",
+    "status": "live",
+    "commit_sha": "a3f2b9c",
+    "commit_message": "Add payment integration",
+    "triggered_by": "user@example.com",
+    "duration_seconds": 47,
+    "created_at": "2024-01-15T14:00:00Z",
+    "live_at": "2024-01-15T14:00:47Z"
+  },
+  "error": null
+}
+```
+
+<Note>
+  A deployment moves through the following statuses in order: `queued` → `building` → `live` (or `failed`). Once a newer deployment goes live, the previous one transitions to `superseded`.
+</Note>
+
+---
+
+## Rollback
+
+```
+POST /apps/{app_id}/rollback
+```
+
+Rolls back the app to its previous live deployment, or to a specific deployment you identify. A rollback creates a **new deployment** using the target commit SHA — it does not restore the old deployment record.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app to roll back.
+</ParamField>
+
+### Request body
+
+<ParamField body="deployment_id" type="string">
+  The ID of the deployment to roll back to. If omitted, Antideploy rolls back to the deployment that was live immediately before the current one.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The ID of the new deployment created to perform the rollback.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial status of the rollback deployment. Will be `queued`.
+</ResponseField>
+
+<ResponseField name="commit_sha" type="string">
+  The commit SHA of the version being restored.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp when the rollback was queued.
+</ResponseField>
+
+### Example — roll back to the previous version
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  https://api.antideploy.io/v1/apps/app_abc123/rollback
+```
+
+### Example — roll back to a specific deployment
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"deployment_id": "dep_xyz789"}' \
+  https://api.antideploy.io/v1/apps/app_abc123/rollback
+```
+
+```json
+{
+  "data": {
+    "id": "dep_roll001",
+    "app_id": "app_abc123",
+    "status": "queued",
+    "commit_sha": "a3f2b9c",
+    "commit_message": "Rollback to: Add payment integration",
+    "triggered_by": "user@example.com",
+    "duration_seconds": null,
+    "created_at": "2024-01-16T10:00:00Z",
+    "live_at": null
+  },
+  "error": null
+}
+```
+
+<Warning>
+  A rollback deploys older code but does not revert database migrations or other stateful side effects. Review your data layer before rolling back if your recent deployments included schema changes.
+</Warning>

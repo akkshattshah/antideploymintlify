@@ -1,0 +1,100 @@
+---
+title: "GitHub Integration: Auto-Deploy on Push and PR Previews"
+sidebarTitle: "GitHub"
+description: "Connect your GitHub repos to Antideploy for automatic deployments on every push and isolated preview URLs for every pull request."
+---
+
+The Antideploy GitHub integration watches your repositories and triggers deployments automatically. Push to `main` and your production app updates. Open a pull request and a live preview environment spins up with its own URL — ready for review before a single line merges.
+
+## Install the GitHub App
+
+<Steps>
+  <Step title="Open the GitHub integration page">
+    In the Antideploy dashboard, go to **Settings → Integrations → GitHub** and click **Connect GitHub**. This takes you to the GitHub App installation page on GitHub.com.
+  </Step>
+  <Step title="Choose your account or organization">
+    Select the GitHub account or organization where your repositories live. If you're installing for a team, make sure you have owner-level permissions on the GitHub organization.
+  </Step>
+  <Step title="Grant access to specific repositories">
+    Choose **Only select repositories** and pick the repos you want Antideploy to deploy. Avoid granting access to all repositories — select only the repos you intend to connect now. You can add more later.
+
+    <Note>
+      Antideploy requests the minimum permissions required: read access to code and metadata, and write access to commit statuses and deployments. It never reads or writes to unselected repositories.
+    </Note>
+  </Step>
+  <Step title="Confirm the installation">
+    Click **Install & Authorize** on GitHub. You're redirected back to the Antideploy dashboard, where your connected repositories appear under **Settings → Integrations → GitHub**.
+  </Step>
+  <Step title="Link a repository to an app">
+    Click **Link Repository** next to any connected repo. Select an existing Antideploy app (or create a new one), then configure the branch mappings in the next step.
+  </Step>
+</Steps>
+
+## Configure deploy branches
+
+After linking a repository, set which branches deploy to which environments. Antideploy does not deploy every branch by default — you explicitly map branches to environments.
+
+| Branch | Environment |
+|--------|-------------|
+| `main` | `production` |
+| `dev` | `staging` |
+| Any other branch | No automatic deployment (only PR previews, if enabled) |
+
+You can customize these mappings or add additional branch-to-environment rules under **App → Settings → Git**.
+
+<Tip>
+  Use branch protection rules in GitHub to require passing Antideploy status checks before merging to `main`. This prevents deploying code that failed its build or tests.
+</Tip>
+
+## Automatic deployments on push
+
+Once a branch is mapped, every push triggers a deployment automatically. The workflow is:
+
+1. You push a commit to `main`
+2. Antideploy receives the webhook from GitHub
+3. Your code is pulled, built, and deployed
+4. A deployment status (`success` or `failure`) is written back to the GitHub commit
+
+You can monitor deployments in real time under **App → Deployments** or by running `antideploy logs --follow` in your terminal.
+
+## Pull request preview environments
+
+When you open a pull request, Antideploy automatically creates an isolated preview environment for that PR. Each preview:
+
+- Runs a full build from the PR's HEAD commit
+- Gets a unique URL in the format `https://my-app--pr-42.antideploy.app`
+- Updates automatically on every new commit pushed to the branch
+- Is torn down automatically when the PR is closed or merged
+
+Preview environments use the same build process as your production deployment. They share no runtime state with production — they are fully isolated sandboxes.
+
+<Note>
+  Preview environments count toward your plan's concurrency limit. If you have many open PRs, check your plan limits under **Settings → Billing**.
+</Note>
+
+## Deploy status checks in GitHub
+
+Antideploy posts a commit status check to every PR. The check appears in the **Checks** tab and in the merge button area of the PR. Reviewers can click through directly to the preview URL or the build logs without leaving GitHub.
+
+Status check states:
+
+| State | Meaning |
+|-------|---------|
+| **Pending** | Build is in progress |
+| **Success** | Deployment succeeded; preview URL is live |
+| **Failure** | Build or deployment failed; click through for logs |
+
+If you've configured branch protection rules to require status checks, Antideploy's check must pass before the PR can be merged.
+
+## Disconnect or revoke GitHub access
+
+To remove a single repository from Antideploy, go to **Settings → Integrations → GitHub** and click **Unlink** next to that repo.
+
+To fully revoke Antideploy's access to your GitHub account or organization:
+
+1. Go to **Settings → Integrations → GitHub** in the Antideploy dashboard and click **Disconnect GitHub**.
+2. Visit **GitHub → Settings → Applications → Installed GitHub Apps** and uninstall the Antideploy app from there as well.
+
+<Warning>
+  Disconnecting GitHub stops all automatic deployments and removes all PR preview environments associated with the revoked repos. Existing deployments continue running — they are not deleted.
+</Warning>

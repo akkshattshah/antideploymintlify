@@ -1,0 +1,64 @@
+---
+title: "Automatically Provisioned Infrastructure for Every App"
+sidebarTitle: "Overview"
+description: "Antideploy analyzes your code and automatically provisions every infrastructure component your app needs — no cloud configuration required."
+---
+
+Antideploy reads your codebase at deploy time and provisions exactly the infrastructure your app requires. You never create cloud resources, write Terraform, or configure services manually — the platform handles everything from compute to SSL certificates, and keeps it all running.
+
+## What Antideploy manages
+
+Every app on Antideploy gets a purpose-built set of infrastructure components, derived entirely from what your code does:
+
+| Component | What it covers |
+|---|---|
+| **Compute** | Containerized workloads, auto-scaling, regions |
+| **PostgreSQL** | Managed database, backups, connection pooling |
+| **Object Storage** | File uploads, media, static assets, CDN |
+| **Networking** | Custom domains, SSL certificates, routing |
+| **Caching** | Redis-compatible in-memory cache layer |
+| **Queues** | Async job queues and pub/sub messaging |
+| **Workers** | Background processes and scheduled tasks |
+
+Antideploy is provider-agnostic internally. Your app sees a single unified platform — not AWS, GCP, or Azure — and the same environment variable names, dashboard views, and CLI commands work regardless of where your workloads actually run.
+
+## Viewing your app's infrastructure
+
+Open any app in the Antideploy dashboard and click the **Infrastructure** tab. You'll see every provisioned resource, its current status, and live metrics. Resources are grouped by type and linked to the relevant settings pages.
+
+### Infrastructure graph
+
+The **Control Center** includes a live infrastructure graph that maps every resource your app uses and how they connect. Open it by clicking **Control Center → Infrastructure Map** from your app's sidebar. Edges between nodes represent active connections (for example, a compute container connecting to a database), and each node displays its current health status.
+
+<Note>
+The infrastructure graph updates in real time. If a resource becomes unhealthy, its node turns red and a banner appears at the top of the map with a link to the relevant logs.
+</Note>
+
+## Scaling and cost management
+
+Antideploy scales resources independently based on demand. Compute containers scale to zero when idle and spin up within seconds on incoming traffic. Database and storage tiers scale vertically, and you can set a spending cap per app to prevent runaway costs.
+
+To review current resource usage and projected costs, go to **Dashboard → Billing → Usage**. Each resource type is broken out with hourly and monthly cost estimates.
+
+<Tip>
+Enable **Cost Alerts** in your billing settings to receive an email or Slack notification when your projected monthly spend crosses a threshold you define.
+</Tip>
+
+## Infrastructure components
+
+Explore each component in detail:
+
+<CardGroup cols={2}>
+  <Card title="Compute" icon="server" href="/infrastructure/compute">
+    Containerized workloads with auto-scaling, configurable regions, and health checks.
+  </Card>
+  <Card title="Databases" icon="database" href="/infrastructure/databases">
+    Managed PostgreSQL with automatic backups, connection pooling, and point-in-time restore.
+  </Card>
+  <Card title="Storage" icon="folder-open" href="/infrastructure/storage">
+    S3-compatible object storage for file uploads, media, and static assets with built-in CDN.
+  </Card>
+  <Card title="Networking" icon="globe" href="/infrastructure/networking">
+    Custom domains, automatic SSL certificates, HTTPS enforcement, and path routing.
+  </Card>
+</CardGroup>

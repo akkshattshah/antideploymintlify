@@ -1,0 +1,150 @@
+---
+title: "Deployment History, Rollbacks, and Release Management"
+sidebarTitle: "Deployments"
+description: "Browse full deployment history, one-click rollback to any previous release, and track every change with commit, duration, and status in Antideploy."
+---
+
+Every time you push code, Antideploy records a complete deployment entry — what changed, who triggered it, how long it took, and whether it succeeded. That history gives you the visibility to understand your release cadence and the tools to recover instantly when something goes wrong.
+
+## Viewing deployment history
+
+Open the **Deployments** tab inside any app in the Antideploy control center to see a reverse-chronological list of every release. Each entry shows at a glance what you need to assess a deployment or decide whether to roll back.
+
+### Deployment entry fields
+
+| Field | Description |
+|---|---|
+| **Status** | Current state of the deployment (see below) |
+| **Commit** | Git SHA and message, linked to your repository |
+| **Duration** | Total time from queue to live |
+| **Deploy time** | Timestamp when the deployment went live |
+| **Triggered by** | User, API key, or CI integration that initiated the deploy |
+
+### Deployment statuses
+
+<CardGroup cols={3}>
+  <Card title="Queued" icon="clock">
+    The deployment is waiting for a build runner to become available.
+  </Card>
+  <Card title="Building" icon="hammer">
+    Your code is being compiled, dependencies installed, and a container image assembled.
+  </Card>
+  <Card title="Deploying" icon="rocket">
+    The new image is being rolled out to instances and traffic is being shifted.
+  </Card>
+  <Card title="Live" icon="circle-check">
+    The deployment is serving 100% of traffic successfully.
+  </Card>
+  <Card title="Failed" icon="circle-xmark">
+    The build or rollout encountered an error. The previous deployment continues to serve traffic.
+  </Card>
+  <Card title="Rolled Back" icon="rotate-left">
+    This deployment was superseded by a rollback to a different release.
+  </Card>
+</CardGroup>
+
+## Rolling back to a previous deployment
+
+If a deployment introduces a bug or regression, you can revert to any prior release in seconds. Antideploy switches traffic to the previous container image — no rebuild required.
+
+### From the dashboard
+
+<Steps>
+  <Step title="Open Deployments">
+    Navigate to the **Deployments** tab of your app.
+  </Step>
+  <Step title="Find the target release">
+    Locate the deployment you want to restore. Look for the **Live** badge on the currently active release and the **Rolled Back** badge on any previous reversions.
+  </Step>
+  <Step title="Initiate the rollback">
+    Click the **⋯** menu on the target deployment row and select **Roll back to this deployment**. Confirm in the dialog.
+  </Step>
+  <Step title="Verify traffic">
+    Watch the status badge on the restored deployment flip to **Live**. The dashboard Metrics will reflect the rollback in real time.
+  </Step>
+</Steps>
+
+### From the CLI
+
+```bash
+# Roll back to the previous deployment
+antideploy rollback --app my-app
+
+# Roll back to a specific deployment by ID
+antideploy rollback --app my-app --deployment dep_abc123
+```
+
+<Tip>
+  Find deployment IDs in the dashboard URL when viewing a deployment detail page, or by running `antideploy deployments list --app my-app`.
+</Tip>
+
+## What happens during rollback
+
+<Steps>
+  <Step title="Traffic cutover">
+    Antideploy immediately routes all new requests to the target deployment's container image. In-flight requests on the current deployment complete normally.
+  </Step>
+  <Step title="Instance replacement">
+    New instances running the rolled-back image are brought up. Old instances are drained and terminated once they finish serving any open connections.
+  </Step>
+  <Step title="Health verification">
+    Antideploy runs health checks against the restored instances before confirming the rollback is complete. If health checks fail, you are alerted immediately.
+  </Step>
+</Steps>
+
+<Warning>
+  Rollbacks restore your **application code** only — they do not reverse database migrations. If your deployment included schema changes, verify database compatibility before rolling back, or use an additive migration strategy that supports both the old and new code simultaneously.
+</Warning>
+
+## Zero-downtime deployments
+
+Antideploy uses a rolling update strategy by default. New instances running the latest code are started alongside existing instances, health-checked, and only added to the traffic pool once healthy. Old instances are drained gracefully before termination.
+
+This means your users never hit a deployment window. Configure the rolling update behavior in `antideploy.yaml`:
+
+```yaml
+deploy:
+  strategy: rolling
+  min_healthy_percent: 75   # keep at least 75% of instances live during rollout
+  max_surge: 25             # spin up at most 25% extra instances during rollout
+  drain_timeout: 30         # seconds to wait for in-flight requests to complete
+```
+
+## Canary and staged rollouts
+
+For high-risk or high-traffic applications, Antideploy supports canary releases that send a configurable percentage of traffic to the new deployment before a full rollout.
+
+```yaml
+deploy:
+  strategy: canary
+  canary_weight: 10         # send 10% of traffic to the new deployment initially
+  canary_analysis:
+    duration: 15m           # observe for 15 minutes
+    error_rate_threshold: 1 # abort if error rate exceeds 1%
+    latency_p99_threshold: 500 # abort if P99 latency exceeds 500ms
+  promote_on_success: true  # automatically promote to 100% if analysis passes
+```
+
+<Note>
+  If the canary analysis detects a regression, Antideploy automatically aborts the rollout and routes all traffic back to the stable deployment. No manual intervention required.
+</Note>
+
+## Deployment notifications
+
+Stay informed about every release without watching the dashboard. Configure deployment notifications under **Settings → Notifications**, or in `antideploy.yaml`:
+
+```yaml
+notifications:
+  on_deploy_success:
+    - channel: slack
+      message: "✅ {{app}} deployed {{commit_short}} to {{environment}}"
+  on_deploy_failure:
+    - channel: slack
+    - channel: email
+  on_rollback:
+    - channel: slack
+    - channel: webhook
+      url: "https://yourapp.com/hooks/deploy"
+```
+
+Notification payloads include the deployment ID, commit SHA, environment, duration, and a deep link back to the deployment detail page in the Antideploy control center.

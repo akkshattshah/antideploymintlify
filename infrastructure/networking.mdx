@@ -1,0 +1,120 @@
+---
+title: "Custom Domains, SSL Certificates, and Networking"
+sidebarTitle: "Networking"
+description: "Every Antideploy app gets an instant HTTPS URL. Add a custom domain in minutes with automatic SSL provisioning, DNS guidance, and path routing."
+---
+
+Every app on Antideploy gets a public URL the moment it's first deployed, secured with HTTPS by default. When you're ready to go live on your own domain, Antideploy handles SSL certificate provisioning and renewal automatically — you only need to add a DNS record.
+
+## Default app URL
+
+On first deployment, your app is assigned a URL in the format:
+
+```
+https://<app-name>.antideploy.app
+```
+
+This URL is permanent, always available, and secured with a wildcard SSL certificate. You can share it immediately without any configuration.
+
+## Adding a custom domain
+
+<Steps>
+  <Step title="Open your app's networking settings">
+    In the Antideploy dashboard, open your app and click **Infrastructure → Networking**. Then click **Add Domain**.
+  </Step>
+  <Step title="Enter your domain">
+    Type the domain you want to use (for example, `www.mycompany.com` or `app.mycompany.com`). Click **Continue**.
+  </Step>
+  <Step title="Configure your DNS records">
+    Antideploy displays the DNS records you need to add at your domain registrar or DNS provider. You'll typically add one of the following:
+
+    **CNAME record** (recommended for subdomains):
+
+    | Type | Host | Value |
+    |---|---|---|
+    | CNAME | `www` | `cname.antideploy.app` |
+
+    **A records** (required for apex/root domains):
+
+    | Type | Host | Value |
+    |---|---|---|
+    | A | `@` | `76.76.21.21` |
+    | A | `@` | `76.76.21.22` |
+
+    Add these records at your DNS provider, then return to the dashboard.
+  </Step>
+  <Step title="Wait for DNS propagation">
+    DNS changes typically propagate within a few minutes but can take up to 48 hours depending on your provider's TTL settings. Antideploy polls your domain automatically and notifies you when it detects the correct records.
+  </Step>
+  <Step title="SSL certificate is provisioned automatically">
+    Once DNS is verified, Antideploy requests and installs a TLS certificate for your domain. The status indicator next to your domain turns green and your app is immediately accessible at the custom URL.
+  </Step>
+</Steps>
+
+<Note>
+You don't need to do anything to provision or renew SSL certificates. Antideploy handles the full certificate lifecycle. Certificates are renewed automatically before they expire.
+</Note>
+
+## SSL certificates
+
+Antideploy provisions certificates through Let's Encrypt or a trusted CA depending on your plan. All certificates are:
+
+- **Issued automatically** when a domain is verified
+- **Renewed automatically** before expiration — typically 30 days before the expiry date
+- **Secured with TLS 1.2 minimum** — older TLS versions are rejected
+- **HSTS-enabled** — browsers are instructed to always use HTTPS
+
+You can view your certificate details (expiry date, issuer, domains covered) under **Infrastructure → Networking → Certificates**.
+
+## HTTPS enforced by default
+
+All HTTP traffic to your app is automatically redirected to HTTPS with a `301` permanent redirect. This applies to both your default `.antideploy.app` URL and any custom domains you add.
+
+<Warning>
+HTTP-to-HTTPS redirection cannot be disabled on Antideploy. All apps must serve traffic over HTTPS. If a client makes an HTTP request, it will always receive a redirect response.
+</Warning>
+
+## Adding multiple domains
+
+You can add as many domains as your plan allows. All domains are served by the same deployment — there is no need to deploy your app multiple times. To add another domain, click **Add Domain** again from the **Infrastructure → Networking** page and repeat the DNS configuration steps.
+
+<Tip>
+If you want two domains to serve identical content, add both and let Antideploy handle routing. If you want one domain to redirect to another (for example, `mycompany.com` → `www.mycompany.com`), configure that as a redirect instead.
+</Tip>
+
+## Redirects and path routing
+
+### Domain-level redirects
+
+To redirect one domain to another permanently, go to **Infrastructure → Networking → Redirects** and click **Add Redirect**. Set the source domain and the destination URL. Antideploy returns a `301` response for all requests to the source domain.
+
+For example, to redirect the apex domain to the `www` subdomain:
+
+| From | To | Type |
+|---|---|---|
+| `mycompany.com` | `https://www.mycompany.com` | 301 (permanent) |
+
+### Path-level routing
+
+If your app exposes multiple services or microservices, you can route different URL paths to different Antideploy apps. Configure path rules under **Infrastructure → Networking → Routing**:
+
+| Path prefix | Routes to |
+|---|---|
+| `/` | `main-app` |
+| `/api/` | `api-service` |
+| `/admin/` | `admin-app` |
+
+Path routing rules are evaluated in order — more specific prefixes take priority. Changes to routing rules take effect within seconds and do not require a redeployment.
+
+## Checking domain status
+
+The **Infrastructure → Networking** page shows the current status of every domain attached to your app:
+
+| Status | Meaning |
+|---|---|
+| 🟡 **Pending DNS** | Antideploy is waiting to detect your DNS records |
+| 🔵 **Issuing Certificate** | DNS verified; SSL certificate is being provisioned |
+| 🟢 **Active** | Domain is live and HTTPS is fully configured |
+| 🔴 **Error** | A problem was detected — click for details and next steps |
+
+If a domain shows an error, click its row to open the diagnostic view. Common issues (incorrect DNS records, propagation delays, certificate issuance failures) are described with specific remediation steps.

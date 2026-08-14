@@ -1,0 +1,387 @@
+---
+title: "Antideploy CLI Command Reference"
+sidebarTitle: "Commands"
+description: "Complete reference for every Antideploy CLI command — flags, arguments, and usage examples for deploy, logs, rollback, scale, and more."
+---
+
+This page documents every command available in the Antideploy CLI. Each command supports the [global flags](/cli/overview#global-flags) (`--app`, `--env`, `--json`, `--help`) in addition to its own options.
+
+<Accordion title="deploy">
+
+Push your project to Antideploy and start a new deployment. Run this from your project root; the CLI packages your code and streams progress by default.
+
+```bash
+antideploy deploy [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--name <name>` | App name to deploy. Defaults to the current directory name. |
+| `--env <env>` | Target environment. Defaults to `production`. |
+| `--region <region>` | Region to deploy to (e.g. `us-east-1`, `eu-west-1`). |
+| `--follow` | Stream deployment logs to your terminal after the build kicks off. |
+| `--no-wait` | Fire and forget — submit the deployment and return immediately without waiting for it to finish. |
+
+**Examples**
+
+Deploy the current project to production:
+
+```bash
+antideploy deploy
+```
+
+Deploy to staging and stream logs until the deployment finishes:
+
+```bash
+antideploy deploy --env staging --follow
+```
+
+Deploy with an explicit app name and region:
+
+```bash
+antideploy deploy --name my-api --region eu-west-1
+```
+
+Submit a deployment from CI without blocking the pipeline:
+
+```bash
+antideploy deploy --no-wait
+```
+
+</Accordion>
+
+<Accordion title="logs">
+
+Fetch or stream logs for a deployed app. By default, the last 100 lines are returned and the command exits. Add `--follow` to stream live.
+
+```bash
+antideploy logs [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to fetch logs from. |
+| `--env <env>` | Environment to read logs from. |
+| `--follow`, `-f` | Stream logs in real time. Press `Ctrl+C` to stop. |
+| `--level <level>` | Filter by log level: `info`, `warn`, `error`, or `debug`. |
+| `--since <duration>` | Show logs from the last N (e.g. `1h`, `30m`, `5m`). |
+| `--lines <n>` | Number of lines to return. Defaults to `100`. |
+
+**Examples**
+
+Show the last 100 log lines for an app:
+
+```bash
+antideploy logs --app my-api
+```
+
+Stream live logs for the staging environment:
+
+```bash
+antideploy logs --app my-api --env staging --follow
+```
+
+Show only errors from the past hour:
+
+```bash
+antideploy logs --app my-api --level error --since 1h
+```
+
+Tail the last 500 lines:
+
+```bash
+antideploy logs --app my-api --lines 500
+```
+
+</Accordion>
+
+<Accordion title="rollback">
+
+Roll back an app to a previous deployment. Without `--deployment`, Antideploy rolls back to the last successful deployment. Use `--deployment` to target a specific revision.
+
+```bash
+antideploy rollback [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to roll back. |
+| `--deployment <dep_id>` | Specific deployment ID to roll back to. Deployment IDs are shown in `antideploy deploy` output and the dashboard. |
+| `--env <env>` | Environment to roll back. |
+
+**Examples**
+
+Roll back to the previous successful deployment:
+
+```bash
+antideploy rollback --app my-api
+```
+
+Roll back to a specific deployment:
+
+```bash
+antideploy rollback --app my-api --deployment dep_xyz789
+```
+
+Roll back the staging environment:
+
+```bash
+antideploy rollback --app my-api --env staging --deployment dep_abc123
+```
+
+<Note>
+  Rollback promotes an existing built artifact — it does not re-run your build. Traffic shifts to the target deployment within seconds.
+</Note>
+
+</Accordion>
+
+<Accordion title="scale">
+
+Adjust the compute resources and instance count for an app. Changes apply immediately without a new deployment.
+
+```bash
+antideploy scale [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to scale. |
+| `--min <n>` | Minimum number of running instances. |
+| `--max <n>` | Maximum number of instances under autoscaling. |
+| `--cpu <n>` | Number of vCPUs per instance. |
+| `--memory <mb>` | Memory per instance in MB. |
+
+**Examples**
+
+Set the autoscaling range for an app:
+
+```bash
+antideploy scale --app my-api --min 2 --max 10
+```
+
+Upgrade instance size:
+
+```bash
+antideploy scale --app my-api --cpu 2 --memory 1024
+```
+
+Pin an app to exactly one instance (disable autoscaling):
+
+```bash
+antideploy scale --app my-api --min 1 --max 1
+```
+
+<Tip>
+  Setting `--min` and `--max` to the same value disables autoscaling and keeps a fixed number of instances running at all times.
+</Tip>
+
+</Accordion>
+
+<Accordion title="env">
+
+Manage environment variables for an app. Variables are injected as process environment variables at runtime and are visible in plaintext in the dashboard. For sensitive values, use [`secrets`](#secrets) instead.
+
+```bash
+antideploy env set KEY=VALUE [KEY=VALUE...] [flags]
+antideploy env get KEY [flags]
+antideploy env list [flags]
+antideploy env unset KEY [flags]
+antideploy env set --file .env [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to update. |
+| `--env <env>` | Environment to update. |
+| `--file <path>` | Load variables from a `.env` file instead of inline arguments. |
+
+**Examples**
+
+Set a single variable:
+
+```bash
+antideploy env set NODE_ENV=production --app my-api
+```
+
+Set multiple variables at once:
+
+```bash
+antideploy env set LOG_LEVEL=info PORT=3000 --app my-api
+```
+
+Import variables from a `.env` file:
+
+```bash
+antideploy env set --file .env.production --app my-api
+```
+
+Read a single variable:
+
+```bash
+antideploy env get LOG_LEVEL --app my-api
+```
+
+List all variables:
+
+```bash
+antideploy env list --app my-api
+```
+
+Remove a variable:
+
+```bash
+antideploy env unset LOG_LEVEL --app my-api
+```
+
+<Warning>
+  Updating environment variables triggers a rolling restart of your app's instances so the new values are picked up. Plan updates during low-traffic periods if your app does not support zero-downtime restarts.
+</Warning>
+
+</Accordion>
+
+<Accordion title="secrets">
+
+Manage secrets for an app. Secrets are encrypted at rest and in transit, and their values are never displayed after the initial set. Use secrets for API keys, database passwords, and any other sensitive credentials.
+
+```bash
+antideploy secrets set KEY=VALUE [flags]
+antideploy secrets list [flags]
+antideploy secrets delete KEY [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to update. |
+
+**Examples**
+
+Store a secret:
+
+```bash
+antideploy secrets set DATABASE_URL=postgres://user:pass@host/db --app my-api
+```
+
+List secrets (names only — values are never shown):
+
+```bash
+antideploy secrets list --app my-api
+```
+
+Delete a secret:
+
+```bash
+antideploy secrets delete DATABASE_URL --app my-api
+```
+
+<Note>
+  Like environment variables, updating a secret triggers a rolling restart so your app processes start with the new value.
+</Note>
+
+</Accordion>
+
+<Accordion title="diagnose">
+
+Run an AI-powered diagnostic on a misbehaving app. Antideploy inspects recent logs, error rates, resource usage, and deployment history, then returns a plain-language summary with suggested remediation steps.
+
+```bash
+antideploy diagnose [flags]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to diagnose. |
+| `--watch` | Poll and wait until the diagnostic analysis completes, then print the full report. |
+
+**Examples**
+
+Kick off a diagnostic and return immediately:
+
+```bash
+antideploy diagnose --app my-api
+```
+
+Wait for the full report before exiting:
+
+```bash
+antideploy diagnose --app my-api --watch
+```
+
+Output the diagnostic report as JSON for downstream processing:
+
+```bash
+antideploy diagnose --app my-api --watch --json
+```
+
+</Accordion>
+
+<Accordion title="apps">
+
+List, inspect, and delete applications in your account.
+
+```bash
+antideploy apps list
+antideploy apps info --app <name>
+antideploy apps delete --app <name>
+```
+
+**Examples**
+
+List all apps in your account:
+
+```bash
+antideploy apps list
+```
+
+Get detailed info about a specific app (region, status, URL, instance count):
+
+```bash
+antideploy apps info --app my-api
+```
+
+Delete an app and all its associated resources:
+
+```bash
+antideploy apps delete --app my-api
+```
+
+<Warning>
+  `apps delete` is irreversible. All deployments, environment variables, secrets, and logs for the app are permanently deleted. You will be prompted to confirm by typing the app name.
+</Warning>
+
+</Accordion>
+
+<Accordion title="domains">
+
+Add custom domains to an app, list configured domains, and remove them.
+
+```bash
+antideploy domains add <domain> --app <name>
+antideploy domains list --app <name>
+antideploy domains remove <domain> --app <name>
+```
+
+**Examples**
+
+Add a custom domain:
+
+```bash
+antideploy domains add api.example.com --app my-api
+```
+
+List all domains configured for an app:
+
+```bash
+antideploy domains list --app my-api
+```
+
+Remove a domain:
+
+```bash
+antideploy domains remove api.example.com --app my-api
+```
+
+<Note>
+  After running `domains add`, Antideploy provides the DNS records you need to configure at your registrar. TLS certificates are provisioned automatically once DNS propagates.
+</Note>
+
+</Accordion>

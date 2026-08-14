@@ -1,0 +1,80 @@
+---
+title: "Custom Domains and SSL Certificate Configuration"
+sidebarTitle: "Domains"
+description: "Add custom domains to your app with automatic SSL certificate provisioning and renewal — no manual certificate management required."
+---
+
+Every Antideploy app gets a default domain at `https://your-app.antideploy.app` the moment it's deployed. When you're ready to go live, add your own domain and Antideploy handles DNS verification, SSL certificate provisioning, and automatic renewal — all without any manual certificate management.
+
+## Your default domain
+
+Your app is immediately accessible at:
+
+```
+https://your-app.antideploy.app
+```
+
+This domain is always active and always has a valid SSL certificate. It's useful for testing, staging environments, and sharing previews before your custom domain is configured.
+
+## Adding a custom domain
+
+<Steps>
+  <Step title="Open the Domains panel">
+    Go to your app in the control center and navigate to **Configuration → Domains**. Click **Add Domain** and enter your domain name (e.g., `example.com` or `app.example.com`).
+  </Step>
+  <Step title="Choose your DNS record type">
+    Antideploy will tell you exactly which DNS record to create. The record type depends on your domain:
+
+    - **Subdomain** (e.g., `app.example.com`) — create a **CNAME** record pointing to `your-app.antideploy.app`
+    - **Apex domain** (e.g., `example.com`) — create an **A record** pointing to Antideploy's IP address shown in the dashboard
+
+    | Type | Host | Value |
+    |---|---|---|
+    | CNAME | `app` | `your-app.antideploy.app` |
+    | A | `@` | `76.76.21.21` |
+  </Step>
+  <Step title="Add the record in your DNS provider">
+    Log in to your DNS provider (Cloudflare, Route 53, Namecheap, etc.) and create the record shown in the dashboard. DNS propagation typically takes 1–30 minutes, though it can take up to 48 hours in rare cases.
+  </Step>
+  <Step title="Verify domain ownership">
+    Antideploy automatically checks for your DNS record. Once the record is detected, domain ownership is confirmed and the status changes to **Verified** in the dashboard. You can also click **Check Now** to trigger an immediate verification attempt.
+  </Step>
+  <Step title="SSL certificate provisioned automatically">
+    Once your domain is verified, Antideploy provisions a free SSL certificate via Let's Encrypt. This takes under 60 seconds in most cases. Your domain will show a padlock status of **Active** once the certificate is live.
+  </Step>
+</Steps>
+
+## SSL certificates
+
+Antideploy provisions and renews SSL certificates automatically using Let's Encrypt. You do not need to upload certificates, manage renewal, or configure anything. Certificates are renewed 30 days before expiry — your app will never have a certificate-related outage.
+
+<Note>
+  If you bring your own certificate (e.g., an EV certificate or a wildcard cert from your CA), you can upload it under **Configuration → Domains → Upload Certificate**. Antideploy will use your certificate instead of provisioning one.
+</Note>
+
+## Adding multiple domains
+
+You can attach as many domains as you need to a single app. Each domain gets its own SSL certificate. All domains route to the same deployment — useful for serving `example.com`, `www.example.com`, and `app.example.com` from the same app.
+
+## Redirecting www to apex (or apex to www)
+
+To redirect `www.example.com` → `example.com`:
+
+1. Add both `example.com` and `www.example.com` as domains on your app.
+2. In the Domains panel, set `example.com` as the **Primary Domain**.
+3. Enable **Redirect to Primary** on the `www.example.com` entry.
+
+Antideploy sets up a 301 redirect automatically. The same process works in reverse if you prefer `www` as your canonical domain.
+
+## Domain status indicators
+
+| Status | What it means |
+|---|---|
+| **Pending** | DNS record not yet detected — propagation may still be in progress |
+| **Verified** | DNS record detected, certificate provisioning in progress |
+| **Active** | Domain is live with a valid SSL certificate |
+| **Error** | Certificate provisioning failed or DNS record is incorrect — check the error message for details |
+
+<Tip>
+  Use Cloudflare as your DNS provider for the fastest propagation times and to take advantage of their CDN in front of your Antideploy app.
+</Tip>

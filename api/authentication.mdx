@@ -1,0 +1,155 @@
+---
+title: "Authenticate with the Antideploy API"
+sidebarTitle: "Authentication"
+description: "Learn how to get an Antideploy API key, pass it in the Authorization header, understand key scopes, and rotate or revoke keys."
+---
+
+Every request to the Antideploy API must be authenticated with an API key. Keys are passed as a Bearer token in the `Authorization` header — there are no cookies, sessions, or OAuth flows involved.
+
+<Warning>
+  API keys grant direct access to your applications, deployments, and infrastructure. Treat them like passwords: never commit them to source control, never log them, and never expose them in client-side code.
+</Warning>
+
+---
+
+## Getting an API key
+
+1. Log in to the [Antideploy dashboard](https://app.antideploy.io).
+2. Navigate to **Settings → API Keys**.
+3. Click **Create new key**.
+4. Give the key a descriptive name (e.g., `ci-pipeline`, `monitoring-bot`).
+5. Select the key type and scope (see below).
+6. Copy the key immediately — it is shown only once.
+
+<Note>
+  If you lose a key before saving it, revoke it and generate a new one. Antideploy does not store keys in recoverable form.
+</Note>
+
+---
+
+## Key types
+
+### Personal keys
+
+Personal keys are tied to your individual user account and inherit your account permissions. Use personal keys for local development and one-off scripting.
+
+### Organization keys
+
+Organization keys are tied to your Antideploy organization rather than a specific user. They are not invalidated when team members leave. Use organization keys for CI/CD pipelines, infrastructure automation, and any shared tooling.
+
+---
+
+## Key scopes
+
+When creating a key, you assign it one of the following scopes. Choose the least-privileged scope that covers your use case.
+
+| Scope | What it can do |
+|---|---|
+| `read-only` | Read apps, deployments, infrastructure, logs. Cannot create, modify, or delete anything. |
+| `deploy` | Everything in `read-only`, plus trigger deployments and rollbacks. Cannot modify app settings or infrastructure. |
+| `admin` | Full access: create and delete apps, scale infrastructure, manage keys. |
+
+<Tip>
+  Use `read-only` keys for monitoring dashboards and observability integrations. Use `deploy` keys for CI/CD pipelines. Reserve `admin` keys for infrastructure automation scripts.
+</Tip>
+
+---
+
+## Making authenticated requests
+
+Pass your API key as a Bearer token in the `Authorization` header on every request.
+
+### curl
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.antideploy.io/v1/apps
+```
+
+### JavaScript (fetch)
+
+```javascript
+const res = await fetch('https://api.antideploy.io/v1/apps', {
+  headers: {
+    'Authorization': `Bearer ${process.env.ANTIDEPLOY_API_KEY}`
+  }
+})
+
+const { data, error } = await res.json()
+```
+
+### JavaScript (Node.js with environment variable)
+
+Store your key in an environment variable and never hard-code it:
+
+```javascript
+// .env
+// ANTIDEPLOY_API_KEY=sk_live_...
+
+import 'dotenv/config'
+
+async function listApps() {
+  const res = await fetch('https://api.antideploy.io/v1/apps', {
+    headers: {
+      'Authorization': `Bearer ${process.env.ANTIDEPLOY_API_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!res.ok) {
+    const { error } = await res.json()
+    throw new Error(`${error.code}: ${error.message}`)
+  }
+
+  const { data } = await res.json()
+  return data.items
+}
+```
+
+### Python
+
+```python
+import os
+import requests
+
+headers = {
+    "Authorization": f"Bearer {os.environ['ANTIDEPLOY_API_KEY']}"
+}
+
+response = requests.get(
+    "https://api.antideploy.io/v1/apps",
+    headers=headers
+)
+response.raise_for_status()
+apps = response.json()["data"]["items"]
+```
+
+---
+
+## 401 vs 403 errors
+
+Both errors indicate a failed authorization check, but they mean different things:
+
+| Status | Code | Meaning |
+|---|---|---|
+| `401 Unauthorized` | `missing_api_key` or `invalid_api_key` | No `Authorization` header was provided, or the key is malformed, revoked, or does not exist. |
+| `403 Forbidden` | `insufficient_scope` | The key is valid, but its scope does not permit the requested action. |
+
+If you receive a `401`, verify that you are setting the `Authorization` header correctly and that the key has not been revoked. If you receive a `403`, you need a key with a higher scope for the operation you are attempting.
+
+---
+
+## Key rotation and revocation
+
+You should rotate API keys regularly, especially for long-lived automations. To rotate a key:
+
+1. Go to **Settings → API Keys** in the dashboard.
+2. Create a new key with the same scope.
+3. Update your integration or environment variables to use the new key.
+4. Revoke the old key by clicking **Revoke** next to it.
+
+Revoked keys are rejected immediately — there is no grace period. Plan rotations to avoid downtime in automated systems.
+
+<Note>
+  Antideploy logs every API request along with the key ID (not the key value) that made it. If you suspect a key has been compromised, revoke it immediately from the dashboard and check the audit log under **Settings → Audit Log**.
+</Note>

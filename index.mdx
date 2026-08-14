@@ -1,20 +1,74 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "Antideploy: Deploy and Operate Any App Without Touching Cloud Config"
+sidebarTitle: "Home"
+description: "Antideploy automatically provisions, deploys, and operates every component your app needs — compute, database, storage, networking, and more — from a single platform."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Antideploy is the deployment and operations platform for apps built anywhere — with Claude Code, Codex, Cursor, traditional development, or any low-code tool. Bring your existing application through GitHub, a folder upload, the CLI, or an API call, and Antideploy handles everything else: analyzing your codebase, provisioning infrastructure, building and deploying your app, and keeping it running in production.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Deploy your first app in minutes — no cloud configuration required.
+  </Card>
+  <Card title="How It Works" icon="circle-info" href="/how-it-works">
+    Learn how Antideploy analyzes your code and provisions infrastructure automatically.
+  </Card>
+  <Card title="Deploy from GitHub" icon="github" href="/deploying/github">
+    Connect your repository and deploy on every push with zero configuration.
+  </Card>
+  <Card title="App Intelligence" icon="brain" href="/intelligence/overview">
+    AI-powered diagnostics, root cause analysis, and automated fixes for your apps.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Automate deployments, inspect health, and manage infrastructure via REST API.
+  </Card>
+  <Card title="CLI & MCP" icon="terminal" href="/cli/overview">
+    Operate your apps from the terminal or directly inside your AI coding environment.
+  </Card>
+</CardGroup>
+
+## Everything Your App Needs, Automatically
+
+When you deploy an app on Antideploy, the platform reads your codebase and determines what infrastructure it needs. There is nothing to configure manually.
+
+<CardGroup cols={3}>
+  <Card title="Compute" icon="server" href="/infrastructure/compute">
+    Auto-scaled containers with zero cold starts
+  </Card>
+  <Card title="Databases" icon="database" href="/infrastructure/databases">
+    Managed PostgreSQL with automatic backups
+  </Card>
+  <Card title="Storage" icon="hard-drive" href="/infrastructure/storage">
+    Object storage for files, assets, and uploads
+  </Card>
+  <Card title="Networking & SSL" icon="shield-check" href="/infrastructure/networking">
+    Custom domains with automatic HTTPS
+  </Card>
+  <Card title="Secrets" icon="key" href="/configuration/secrets">
+    Encrypted environment variables and secrets
+  </Card>
+  <Card title="Background Jobs" icon="clock" href="/operations/jobs">
+    Cron jobs, queues, and background workers
+  </Card>
+</CardGroup>
+
+## Get Up and Running
+
+<Steps>
+  <Step title="Create an account">
+    Sign up at [app.antideploy.io](https://app.antideploy.io). No credit card required to start.
+  </Step>
+  <Step title="Connect your app">
+    Link a GitHub repository, upload a ZIP, or run `antideploy deploy` in your project directory.
+  </Step>
+  <Step title="Antideploy analyzes and builds">
+    The platform detects your framework, language, and dependencies, then provisions the exact infrastructure your app needs.
+  </Step>
+  <Step title="Your app is live">
+    Get a production URL with HTTPS, a control center dashboard, logs, metrics, and everything else — ready to use.
+  </Step>
+</Steps>
 
 <Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
+  Already inside Claude Code, Cursor, or another AI coding environment? Install the [MCP integration](/integrations/mcp) to deploy, check logs, and diagnose issues without leaving your editor.
 </Tip>
-
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
