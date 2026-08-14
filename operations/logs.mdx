@@ -74,24 +74,23 @@ Antideploy recognizes four standard log levels. When your app emits structured J
 Use the `antideploy logs` command to stream or query logs without leaving your terminal:
 
 ```bash
-# Stream live logs for an app (defaults to production)
+# Stream live logs for an app
 antideploy logs --app my-app
 
-# Follow logs in a specific environment
-antideploy logs --app my-app --env production --follow
+# Follow logs in real time (tail mode)
+antideploy logs --app my-app --follow
 
 # Show only error-level logs from the past hour
 antideploy logs --app my-app --level error --since 1h
 ```
 
-Additional flags available:
+Available flags:
 
 | Flag | Description |
 |---|---|
+| `--follow` | Stream new log lines in real time (tail mode) |
+| `--level <level>` | Filter to a specific log level: `error`, `warn`, `info`, or `debug` |
 | `--since <duration>` | Show logs from the past `1h`, `30m`, `2d`, etc. |
-| `--until <timestamp>` | Show logs up to an ISO 8601 timestamp |
-| `--instance <id>` | Restrict output to a single instance |
-| `--output json` | Emit each log line as a JSON object (useful for piping) |
 
 ## Log retention
 

@@ -1,5 +1,5 @@
 ---
-title: "AI Diagnostics: Root Cause Analysis and Auto-Fix"
+title: "AI Diagnostics: Root Cause Analysis and Automated Fixes"
 sidebarTitle: "Diagnostics"
 description: "AI-powered diagnostics that analyze your logs, errors, and performance data to identify root causes and propose or apply automatic fixes."
 ---
@@ -27,7 +27,7 @@ antideploy diagnose --app my-app --watch
 Send a `POST` request to trigger a diagnostic programmatically — useful for integrating into your CI/CD pipeline or incident response runbooks.
 
 ```bash
-curl -X POST https://api.antideploy.app/v1/apps/app_abc123/diagnostics \
+curl -X POST https://api.antideploy.app/v1/apps/app_abc123/diagnose \
   -H "Authorization: Bearer $ANTIDEPLOY_API_KEY"
 ```
 

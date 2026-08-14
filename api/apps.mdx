@@ -1,7 +1,7 @@
 ---
-title: "Apps API: Create, List, and Manage Applications"
+title: "Antideploy Apps API — Create, List, and Manage Apps"
 sidebarTitle: "Apps"
-description: "Use the Apps API to create, retrieve, update, and delete applications, and to check the real-time health status of any app."
+description: "Use the Antideploy Apps API to create and configure apps, retrieve details, update settings, delete apps, and check real-time health status."
 ---
 
 The Apps API is the starting point for everything in Antideploy. An **app** is the top-level resource that represents a deployed application — it holds your configuration, points to your source code, and owns all deployments, infrastructure, and logs beneath it.
@@ -38,7 +38,7 @@ All app endpoints are scoped to your organization and require a valid API key. S
 
 ## List all apps
 
-```
+```http
 GET /apps
 ```
 
@@ -104,7 +104,7 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ## Create an app
 
-```
+```http
 POST /apps
 ```
 
@@ -187,7 +187,7 @@ curl -X POST \
 
 ## Get an app
 
-```
+```http
 GET /apps/{app_id}
 ```
 
@@ -225,7 +225,7 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ## Update an app
 
-```
+```http
 PATCH /apps/{app_id}
 ```
 
@@ -288,7 +288,7 @@ curl -X PATCH \
 
 ## Delete an app
 
-```
+```http
 DELETE /apps/{app_id}
 ```
 
@@ -325,7 +325,7 @@ A successful deletion returns `200 OK` with an empty `data` object:
 
 ## Get app health
 
-```
+```http
 GET /apps/{app_id}/health
 ```
 

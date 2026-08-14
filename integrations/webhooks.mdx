@@ -1,5 +1,5 @@
 ---
-title: "Webhooks: Get Notified on Deployment Events"
+title: "Webhooks: Deployment and Health Event Notifications"
 sidebarTitle: "Webhooks"
 description: "Configure Antideploy webhooks to receive HTTP POST notifications when deployments succeed or fail, health changes, scaling events, and alerts fire."
 ---
@@ -66,7 +66,7 @@ Every event uses the same envelope structure. The `data` field contains event-sp
 | `data` | object | Event-specific payload fields |
 
 <Tip>
-  Include `--json` in your webhook processing logic to handle additional fields gracefully as Antideploy adds them to the `data` object over time.
+  Handle unknown fields in the `data` object gracefully — ignore any keys your code doesn't recognize. Antideploy may add new fields to `data` over time, and a permissive parser ensures your webhook handler stays forward-compatible.
 </Tip>
 
 ## Verify webhook signatures
@@ -102,7 +102,7 @@ app.post('/webhooks/antideploy', express.raw({ type: 'application/json' }), (req
   }
 
   const event = JSON.parse(req.body)
-  console.log('Received event:', event.type)
+  console.log('Received event:', event.event)
 
   // Process the event...
   res.status(200).send('OK')

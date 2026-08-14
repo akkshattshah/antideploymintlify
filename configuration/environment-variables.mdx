@@ -1,5 +1,5 @@
 ---
-title: "Environment Variables: Managing App Configuration"
+title: "Environment Variables: Managing Your App Configuration"
 sidebarTitle: "Env Variables"
 description: "Set, update, and manage environment variables per app and environment — from the dashboard or CLI — to configure your app without changing code."
 ---
@@ -23,6 +23,10 @@ antideploy env set DATABASE_URL=postgres://user:pass@host:5432/mydb --app my-app
 
 ```bash Set multiple variables from a file
 antideploy env set --file .env --app my-app
+```
+
+```bash Get a single variable's value
+antideploy env get MY_VAR --app my-app
 ```
 
 ```bash List all variables

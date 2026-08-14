@@ -1,5 +1,5 @@
 ---
-title: "Manage Staging and Production Environments"
+title: "Manage Production, Staging, and Preview Environments"
 sidebarTitle: "Environments"
 description: "Create isolated staging, production, and preview environments — each with its own URL, config, secrets, and infrastructure — then promote with confidence."
 ---
@@ -122,7 +122,7 @@ Each environment maintains its own set of environment variables. A variable set 
     antideploy env set STRIPE_SECRET_KEY sk_live_... --env production --secret
 
     # List all variables for an environment (secrets shown as ***)
-    antideploy env vars --env staging
+    antideploy env get --env staging
 
     # Remove a variable
     antideploy env unset DATABASE_URL --env staging

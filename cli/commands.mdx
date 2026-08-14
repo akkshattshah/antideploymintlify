@@ -1,5 +1,5 @@
 ---
-title: "Antideploy CLI Command Reference"
+title: "Antideploy CLI Commands: Flags, Arguments, and Examples"
 sidebarTitle: "Commands"
 description: "Complete reference for every Antideploy CLI command — flags, arguments, and usage examples for deploy, logs, rollback, scale, and more."
 ---
@@ -324,6 +324,10 @@ antideploy apps info --app <name>
 antideploy apps delete --app <name>
 ```
 
+| Flag | Applies to | Description |
+|------|------------|-------------|
+| `--app <name>` | `info`, `delete` | Name of the app to inspect or delete. |
+
 **Examples**
 
 List all apps in your account:
@@ -359,6 +363,10 @@ antideploy domains add <domain> --app <name>
 antideploy domains list --app <name>
 antideploy domains remove <domain> --app <name>
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--app <name>` | App to manage domains for. Required for all subcommands. |
 
 **Examples**
 

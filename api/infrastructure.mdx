@@ -1,7 +1,7 @@
 ---
-title: "Infrastructure API: Inspect and Scale App Resources"
+title: "Infrastructure API — Inspect, Scale, and Diagnose Apps"
 sidebarTitle: "Infrastructure"
-description: "Use the Infrastructure API to inspect provisioned compute, databases, and storage, adjust scaling, and retrieve app performance metrics."
+description: "Use the Infrastructure API to inspect provisioned compute, databases, and storage, adjust scaling, retrieve performance metrics, and run AI diagnostics."
 ---
 
 Antideploy automatically provisions the infrastructure your app needs — compute instances, a managed database, and object storage. The Infrastructure API lets you inspect those resources, adjust compute scaling, and pull performance metrics for monitoring and autoscaling logic.
@@ -56,7 +56,7 @@ All infrastructure endpoints are scoped to a specific app. You need the app's ID
 
 ## Get infrastructure
 
-```
+```http
 GET /apps/{app_id}/infrastructure
 ```
 
@@ -138,7 +138,7 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ## Scale compute
 
-```
+```http
 POST /apps/{app_id}/scale
 ```
 
@@ -223,7 +223,7 @@ curl -X POST \
 
 ## Get metrics
 
-```
+```http
 GET /apps/{app_id}/metrics
 ```
 
@@ -309,3 +309,102 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 <Tip>
   Combine the metrics endpoint with the scale endpoint to build a simple autoscaling loop: poll `cpu_percent` every minute, and call `POST /scale` to adjust `min_instances` when utilization crosses a threshold.
 </Tip>
+
+---
+
+## Run AI diagnostics
+
+```http
+POST /apps/{app_id}/diagnose
+```
+
+Triggers an AI-powered diagnostic analysis of your app's current health, recent logs, and performance metrics. Antideploy's diagnostics engine inspects the data it has already collected and returns a structured report with findings and recommended actions. The analysis runs asynchronously — the response returns immediately with a `diagnostic_id` you can use to poll for results.
+
+### Path parameters
+
+<ParamField path="app_id" type="string" required>
+  The unique ID of the app to diagnose.
+</ParamField>
+
+### Request body
+
+<ParamField body="window_minutes" type="integer" default="60">
+  How many minutes of recent data — logs, metrics, and health checks — the diagnostics engine should analyze. Minimum is `5`, maximum is `1440` (24 hours).
+</ParamField>
+
+<ParamField body="focus" type="string">
+  Optional hint to guide the analysis. One of: `performance`, `errors`, `availability`. Omit to run a full general analysis.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="diagnostic_id" type="string">
+  Unique ID for this diagnostic run. Prefix: `diag_`. Use this ID to retrieve the completed report.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current status of the diagnostic run: `running` immediately after creation, then `complete` or `failed`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp when the diagnostic was triggered.
+</ResponseField>
+
+<ResponseField name="findings" type="array">
+  Array of finding objects, populated once `status` is `complete`. Each finding has a `severity` (`info`, `warning`, `critical`), a `title`, and a `description` with recommended actions.
+</ResponseField>
+
+### Example — trigger a diagnostics run
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"window_minutes": 60, "focus": "errors"}' \
+  https://api.antideploy.io/v1/apps/app_abc123/diagnose
+```
+
+```json
+{
+  "data": {
+    "diagnostic_id": "diag_def456",
+    "app_id": "app_abc123",
+    "status": "running",
+    "created_at": "2024-01-15T14:30:00Z",
+    "findings": []
+  },
+  "error": null
+}
+```
+
+### Example — completed diagnostic report
+
+After a few seconds, re-fetching or polling the same endpoint (or waiting for the `status` to become `complete`) returns the full report:
+
+```json
+{
+  "data": {
+    "diagnostic_id": "diag_def456",
+    "app_id": "app_abc123",
+    "status": "complete",
+    "created_at": "2024-01-15T14:30:00Z",
+    "findings": [
+      {
+        "severity": "critical",
+        "title": "Elevated error rate on /api/checkout",
+        "description": "3.4% of requests to /api/checkout returned 500 in the last hour. Logs show repeated database connection timeouts. Consider increasing the database connection pool size or upgrading your database tier."
+      },
+      {
+        "severity": "warning",
+        "title": "Memory utilization above 80%",
+        "description": "Average memory usage across instances has been above 80% for the past 45 minutes. Consider scaling up instance memory using POST /apps/{app_id}/scale."
+      }
+    ]
+  },
+  "error": null
+}
+```
+
+<Note>
+  Diagnostics require at least 5 minutes of data to produce meaningful findings. Running a diagnostic immediately after creating an app or triggering a first deployment will return limited results.
+</Note>

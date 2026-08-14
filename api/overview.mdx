@@ -1,14 +1,14 @@
 ---
-title: "Antideploy REST API Reference Overview"
+title: "Antideploy REST API — Overview and Reference Guide"
 sidebarTitle: "Overview"
-description: "Explore the Antideploy REST API: base URL, versioning, rate limits, request/response format, pagination, and error handling."
+description: "Explore the Antideploy REST API: base URL, versioning, authentication, rate limits, request and response format, pagination, and error handling."
 ---
 
 The Antideploy REST API gives you programmatic access to every part of the platform — create and manage applications, trigger deployments, inspect infrastructure, and stream logs, all over HTTP. Every feature available in the dashboard is available through the API.
 
 All requests go to the base URL:
 
-```
+```text
 https://api.antideploy.io/v1
 ```
 
@@ -153,9 +153,30 @@ When a request fails, the response body contains a structured error object:
     Trigger deployments, inspect their status, and roll back to a previous version.
   </Card>
   <Card title="Infrastructure" icon="server" href="/api/infrastructure">
-    View provisioned compute, databases, and storage. Scale instances up or down.
+    Inspect provisioned compute, databases, and storage. Scale instances, retrieve performance metrics, and run AI diagnostics.
   </Card>
   <Card title="Logs" icon="scroll" href="/api/logs">
     Query historical logs and stream live logs in real time over SSE.
   </Card>
 </CardGroup>
+
+## Complete endpoint index
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/apps` | List all apps |
+| `POST` | `/apps` | Create an app |
+| `GET` | `/apps/{app_id}` | Get app details |
+| `PATCH` | `/apps/{app_id}` | Update app settings |
+| `DELETE` | `/apps/{app_id}` | Delete an app |
+| `GET` | `/apps/{app_id}/health` | Get app health status |
+| `GET` | `/apps/{app_id}/deployments` | List deployments |
+| `POST` | `/apps/{app_id}/deployments` | Trigger a deployment |
+| `GET` | `/apps/{app_id}/deployments/{dep_id}` | Get a deployment |
+| `POST` | `/apps/{app_id}/rollback` | Roll back to a previous deployment |
+| `GET` | `/apps/{app_id}/logs` | Query historical logs |
+| `GET` | `/apps/{app_id}/logs/stream` | Stream live logs over SSE |
+| `GET` | `/apps/{app_id}/metrics` | Get performance metrics |
+| `POST` | `/apps/{app_id}/scale` | Adjust compute resources |
+| `GET` | `/apps/{app_id}/infrastructure` | Inspect provisioned resources |
+| `POST` | `/apps/{app_id}/diagnose` | Trigger AI diagnostics |

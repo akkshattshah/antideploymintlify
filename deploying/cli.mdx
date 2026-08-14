@@ -1,7 +1,7 @@
 ---
-title: "Deploy Applications with the Antideploy CLI"
+title: "Deploy and Manage Your App with the Antideploy CLI"
 sidebarTitle: "CLI Deploy"
-description: "Install the Antideploy CLI to deploy apps, manage environments, and stream live logs — all without leaving your terminal."
+description: "Install the Antideploy CLI to deploy apps, stream live logs, manage environments, and roll back — all without leaving your terminal."
 ---
 
 The Antideploy CLI brings the full deployment workflow into your terminal. Run a single command to ship your current directory, target a specific environment, follow build progress in real time, and manage every aspect of your deployments without touching the dashboard. It's the fastest path from code change to live URL for developers who live in the command line.
@@ -68,7 +68,7 @@ Antideploy analyzes your code, detects the framework, installs dependencies, bui
 
 ### Example output
 
-```
+```text
 antideploy deploy
 
   ✔ Authenticated as alex@example.com
@@ -196,8 +196,8 @@ antideploy status
 
 The CLI works in any CI environment. Set the `ANTIDEPLOY_TOKEN` environment variable instead of running `antideploy login`:
 
-```bash
-# GitHub Actions example
+<CodeGroup>
+```yaml GitHub Actions
 - name: Deploy to Antideploy
   env:
     ANTIDEPLOY_TOKEN: ${{ secrets.ANTIDEPLOY_TOKEN }}
@@ -205,6 +205,13 @@ The CLI works in any CI environment. Set the `ANTIDEPLOY_TOKEN` environment vari
     npm install -g antideploy
     antideploy deploy --env production --yes
 ```
+
+```bash CircleCI / Generic CI
+export ANTIDEPLOY_TOKEN=$ANTIDEPLOY_TOKEN
+npm install -g antideploy
+antideploy deploy --env production --yes
+```
+</CodeGroup>
 
 <Warning>
   Never commit your API token to source control. Always pass it through your CI platform's secrets management.

@@ -1,7 +1,7 @@
 ---
-title: "Logs API: Query and Stream Application Logs"
+title: "Logs API — Query Historical Logs and Live SSE Streams"
 sidebarTitle: "Logs"
-description: "Use the Logs API to search and filter historical application logs by time, level, or text, and stream live logs in real time over SSE."
+description: "Search and filter historical application logs by time range, level, or text, and stream live logs in real time over SSE using the Antideploy Logs API."
 ---
 
 The Logs API gives you programmatic access to everything your application writes to stdout and stderr, plus Antideploy's platform-level events (deployment steps, health check failures, scaling events). You can query historical logs with filters, or open a live stream using Server-Sent Events (SSE).
@@ -36,7 +36,7 @@ All log endpoints are scoped to an app. Retrieve the app ID you need from the [A
 
 ## Query historical logs
 
-```
+```http
 GET /apps/{app_id}/logs
 ```
 
@@ -141,7 +141,7 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ## Stream live logs
 
-```
+```http
 GET /apps/{app_id}/logs/stream
 ```
 
@@ -171,7 +171,7 @@ Opens a **Server-Sent Events (SSE)** connection and streams log entries in real 
 
 The endpoint returns `Content-Type: text/event-stream`. Each event follows the SSE format:
 
-```
+```text
 data: {"timestamp":"2024-01-15T14:05:12Z","level":"info","message":"Server listening on port 3000","deployment_id":"dep_xyz789","instance_id":"inst_001","metadata":{}}
 
 data: {"timestamp":"2024-01-15T14:05:13Z","level":"info","message":"GET /health 200 OK (4ms)","deployment_id":"dep_xyz789","instance_id":"inst_001","metadata":{}}
@@ -179,7 +179,7 @@ data: {"timestamp":"2024-01-15T14:05:13Z","level":"info","message":"GET /health 
 
 Antideploy sends a keepalive comment (`: ping`) every 15 seconds to prevent proxy timeouts:
 
-```
+```text
 : ping
 ```
 
@@ -200,23 +200,34 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ### Example — stream with the browser EventSource API
 
-```javascript
-const key = process.env.ANTIDEPLOY_API_KEY
+The browser's native `EventSource` API does not support custom request headers. To open an authenticated stream from a browser, use the `fetch` streaming approach shown below, which does support the `Authorization` header. Alternatively, if you must use `EventSource`, obtain a short-lived session token from your backend and pass it server-side rather than exposing your API key in a URL.
 
-// Note: EventSource does not support custom headers natively in some environments.
-// Pass the API key as a query parameter for browser-based streaming.
-const stream = new EventSource(
-  `https://api.antideploy.io/v1/apps/app_abc123/logs/stream?api_key=${key}`
+```javascript
+// Recommended: use fetch with Authorization header instead of EventSource in browsers.
+// See the Node.js fetch example below.
+const res = await fetch(
+  'https://api.antideploy.io/v1/apps/app_abc123/logs/stream',
+  {
+    headers: {
+      'Authorization': `Bearer ${YOUR_API_KEY}`
+    }
+  }
 )
 
-stream.onmessage = (event) => {
-  const entry = JSON.parse(event.data)
-  console.log(`[${entry.level.toUpperCase()}] ${entry.timestamp} — ${entry.message}`)
-}
+const reader = res.body.getReader()
+const decoder = new TextDecoder()
 
-stream.onerror = (err) => {
-  console.error('Stream error:', err)
-  stream.close()
+while (true) {
+  const { done, value } = await reader.read()
+  if (done) break
+
+  const text = decoder.decode(value)
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      const entry = JSON.parse(line.slice(6))
+      console.log(`[${entry.level.toUpperCase()}] ${entry.timestamp} — ${entry.message}`)
+    }
+  }
 }
 ```
 

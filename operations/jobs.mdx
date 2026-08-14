@@ -1,6 +1,6 @@
 ---
 title: "Background Workers, Cron Jobs, Queues, and Webhooks"
-sidebarTitle: "Jobs & Workers"
+sidebarTitle: "Jobs"
 description: "Run long-lived workers, schedule recurring cron tasks, process queued jobs, and receive webhook events — all managed and monitored inside Antideploy."
 ---
 
@@ -77,11 +77,7 @@ jobs:
 
 ### Triggering a job manually
 
-Run any scheduled job immediately from the CLI without waiting for its next scheduled time:
-
-```bash
-antideploy jobs run --app my-app --job daily-report
-```
+To run a scheduled job immediately without waiting for its next scheduled time, open the **Jobs** tab in the Antideploy control center, locate the job by name, and click **Run now**. The job launches in a fresh container and its output appears in the job's log stream within seconds.
 
 ## Task queues
 

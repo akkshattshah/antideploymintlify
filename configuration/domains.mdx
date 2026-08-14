@@ -1,5 +1,5 @@
 ---
-title: "Custom Domains and SSL Certificate Configuration"
+title: "Custom Domains: DNS Setup and SSL Certificate Management"
 sidebarTitle: "Domains"
 description: "Add custom domains to your app with automatic SSL certificate provisioning and renewal — no manual certificate management required."
 ---
@@ -43,6 +43,24 @@ This domain is always active and always has a valid SSL certificate. It's useful
     Once your domain is verified, Antideploy provisions a free SSL certificate via Let's Encrypt. This takes under 60 seconds in most cases. Your domain will show a padlock status of **Active** once the certificate is live.
   </Step>
 </Steps>
+
+## Managing domains from the CLI
+
+You can add, list, and remove domains without leaving your terminal.
+
+<CodeGroup>
+```bash Add a domain
+antideploy domains add example.com --app my-app
+```
+
+```bash List all domains
+antideploy domains list --app my-app
+```
+
+```bash Remove a domain
+antideploy domains remove example.com --app my-app
+```
+</CodeGroup>
 
 ## SSL certificates
 

@@ -45,7 +45,7 @@ You never hardcode these values or manage storage credentials manually.
 Your bucket exposes a fully S3-compatible API, so any S3 SDK works without modification. Point the SDK at `STORAGE_URL` and pass the injected credentials:
 
 <CodeGroup>
-```javascript Node.js (AWS SDK v3)
+```javascript Node.js (S3 SDK)
 // STORAGE_URL and credentials are injected automatically
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3')
 

@@ -1,7 +1,7 @@
 ---
-title: "Deployments API: Trigger, List, and Rollback"
+title: "Deployments API — Trigger, Inspect, and Roll Back Deploys"
 sidebarTitle: "Deployments"
-description: "Use the Deployments API to trigger new deploys, inspect deployment status and history, and roll back to any previous version of your app."
+description: "Use the Antideploy Deployments API to trigger new deploys, inspect deployment status and history, and roll back to any previous version of your app."
 ---
 
 A **deployment** represents a single release of your application — a snapshot of your code at a point in time, built, containerized, and served by Antideploy. Every time you push new code or manually trigger a deploy, a new deployment record is created.
@@ -42,7 +42,7 @@ Deployments are scoped to an app. To work with deployments you need the app's ID
 
 ## List deployments
 
-```
+```http
 GET /apps/{app_id}/deployments
 ```
 
@@ -116,7 +116,7 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ## Trigger a deployment
 
-```
+```http
 POST /apps/{app_id}/deployments
 ```
 
@@ -191,7 +191,7 @@ curl -X POST \
 
 ## Get a deployment
 
-```
+```http
 GET /apps/{app_id}/deployments/{deployment_id}
 ```
 
@@ -239,7 +239,7 @@ curl -H "Authorization: Bearer $ANTIDEPLOY_API_KEY" \
 
 ## Rollback
 
-```
+```http
 POST /apps/{app_id}/rollback
 ```
 

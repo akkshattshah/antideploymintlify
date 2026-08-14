@@ -1,5 +1,5 @@
 ---
-title: "Custom Domains, SSL Certificates, and Networking"
+title: "Custom Domains, SSL Certificates, and App Networking"
 sidebarTitle: "Networking"
 description: "Every Antideploy app gets an instant HTTPS URL. Add a custom domain in minutes with automatic SSL provisioning, DNS guidance, and path routing."
 ---
@@ -38,8 +38,8 @@ This URL is permanent, always available, and secured with a wildcard SSL certifi
 
     | Type | Host | Value |
     |---|---|---|
-    | A | `@` | `76.76.21.21` |
-    | A | `@` | `76.76.21.22` |
+    | A | `@` | `198.51.100.1` |
+    | A | `@` | `198.51.100.2` |
 
     Add these records at your DNS provider, then return to the dashboard.
   </Step>
@@ -57,7 +57,7 @@ You don't need to do anything to provision or renew SSL certificates. Antideploy
 
 ## SSL certificates
 
-Antideploy provisions certificates through Let's Encrypt or a trusted CA depending on your plan. All certificates are:
+Antideploy provisions certificates through a trusted certificate authority automatically. All certificates are:
 
 - **Issued automatically** when a domain is verified
 - **Renewed automatically** before expiration — typically 30 days before the expiry date

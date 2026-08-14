@@ -134,7 +134,7 @@ The external connection string includes different credentials than the internal 
 
 ### Connection pooling
 
-Antideploy includes a connection pooler (PgBouncer) in front of every database. Your app connects to the pooler, which manages a fixed number of actual connections to PostgreSQL. This prevents connection exhaustion under load.
+Antideploy includes a built-in connection pooler in front of every database. Your app connects to the pooler, which manages a fixed number of actual connections to PostgreSQL. This prevents connection exhaustion under load.
 
 The pooler is enabled by default and transparent — your `DATABASE_URL` already points to it. If you need a direct (non-pooled) connection for administrative tasks or migrations, use the `DATABASE_DIRECT_URL` variable instead, which is also injected automatically.
 
