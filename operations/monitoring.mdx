@@ -39,7 +39,6 @@ Open the **Metrics** tab inside any app in the Antideploy control center to see 
 
 - Select a custom time range (last 15 minutes to 30 days)
 - Compare metrics across deployments to spot regressions
-- Break down latency and error rate by environment (production, staging, preview)
 - Overlay deployment events on the timeline to correlate changes with metric shifts
 
 <Tip>
@@ -60,7 +59,7 @@ Antideploy continuously pings your application to confirm it is accepting traffi
     The unhealthy instance is automatically restarted. Traffic continues flowing to healthy instances during the restart.
   </Step>
   <Step title="Instance comes back">
-    Once the instance passes two consecutive health checks, Antideploy adds it back to the traffic pool.
+    A single failed check is treated as noise; repeated failures mark the app as down.
   </Step>
 </Steps>
 
@@ -86,14 +85,6 @@ app.get('/health', async (req, res) => {
 
 Then configure the path in your `antideploy.yaml`:
 
-```yaml
-health_check:
-  path: /health
-  interval: 20        # seconds between checks
-  timeout: 5          # seconds to wait for a response
-  healthy_threshold: 2   # consecutive successes to mark healthy
-  unhealthy_threshold: 3 # consecutive failures to mark unhealthy
-```
 
 <Note>
   Your health check endpoint should return within the configured timeout. Slow health checks count as failures.
@@ -107,38 +98,6 @@ Antideploy lets you define threshold-based alerts on any monitored metric. When 
 
 Navigate to **Settings → Alerts** in the control center, or define alerts in `antideploy.yaml`:
 
-```yaml
-alerts:
-  - name: high-error-rate
-    metric: error_rate
-    condition: "gt"
-    threshold: 5          # percent
-    window: 5m            # rolling evaluation window
-    severity: critical
-    notify:
-      - channel: slack
-      - channel: email
-
-  - name: slow-responses
-    metric: latency_p95
-    condition: "gt"
-    threshold: 2000       # milliseconds
-    window: 10m
-    severity: warning
-    notify:
-      - channel: slack
-
-  - name: downtime
-    metric: uptime
-    condition: "lt"
-    threshold: 99.9       # percent
-    window: 1h
-    severity: critical
-    notify:
-      - channel: email
-      - channel: webhook
-        url: "https://yourapp.com/ops/alert"
-```
 
 ### Alert severity levels
 
@@ -147,57 +106,3 @@ alerts:
 | `critical` | 🔴 Red | Downtime, error spikes, complete health failure |
 | `warning` | 🟡 Yellow | Elevated latency, approaching resource limits |
 | `info` | 🔵 Blue | Deployment events, recovery notices |
-
-## Notification channels
-
-Connect your preferred channels under **Settings → Notifications**:
-
-<Tabs>
-  <Tab title="Email">
-    Add one or more email addresses. Antideploy sends a plain-text digest with the alert name, current value, threshold, and a deep link to the relevant chart.
-
-    ```yaml
-    notifications:
-      email:
-        recipients:
-          - ops@yourcompany.com
-          - oncall@yourcompany.com
-    ```
-  </Tab>
-  <Tab title="Slack">
-    Install the Antideploy Slack app from the **Integrations** page, then choose the channel to post to. Alerts include a sparkline of the offending metric.
-
-    ```yaml
-    notifications:
-      slack:
-        channel: "#ops-alerts"
-    ```
-  </Tab>
-  <Tab title="Webhook">
-    Configure any HTTPS endpoint to receive alert payloads as JSON `POST` requests.
-
-    ```yaml
-    notifications:
-      webhooks:
-        - url: "https://yourapp.com/hooks/antideploy"
-          secret: "whsec_your_signing_secret"
-    ```
-
-    Antideploy signs every webhook request with an `X-Antideploy-Signature` header so you can verify authenticity.
-  </Tab>
-</Tabs>
-
-## Uptime and SLA reporting
-
-The **Uptime** section of the Metrics dashboard shows your rolling uptime percentage across the last 7, 30, and 90 days. Each reported incident includes:
-
-- Start and end time
-- Duration
-- Root cause category (health check failure, OOM, deployment error)
-- Link to the relevant logs
-
-You can export a PDF or CSV uptime report from **Settings → Reports** — useful for sharing SLA evidence with customers or stakeholders.
-
-<Tip>
-  Embed a live status badge in your README or status page using the public badge URL found under **Settings → Uptime → Public Badge**.
-</Tip>

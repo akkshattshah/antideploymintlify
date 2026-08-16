@@ -64,19 +64,7 @@ If a deployment introduces a bug or regression, you can revert to any prior rele
   </Step>
 </Steps>
 
-### From the CLI
 
-```bash
-# Roll back to the previous deployment
-antideploy rollback --app my-app
-
-# Roll back to a specific deployment by ID
-antideploy rollback --app my-app --deployment dep_abc123
-```
-
-<Tip>
-  Find deployment IDs in the dashboard URL when you open any deployment's detail page in the **Deployments** tab.
-</Tip>
 
 ## What happens during rollback
 
@@ -98,7 +86,7 @@ antideploy rollback --app my-app --deployment dep_abc123
 
 ## Zero-downtime deployments
 
-Antideploy uses a rolling update strategy by default. New instances running the latest code are started alongside existing instances, health-checked, and only added to the traffic pool once healthy. Old instances are drained gracefully before termination.
+The currently running version keeps serving until the new one is built and passes its health check. If the new version fails to start, the old one is left in place and the deployment is marked failed.
 
 This means your users never hit a deployment window. Configure the rolling update behavior in `antideploy.yaml`:
 
@@ -109,42 +97,3 @@ deploy:
   max_surge: 25             # spin up at most 25% extra instances during rollout
   drain_timeout: 30         # seconds to wait for in-flight requests to complete
 ```
-
-## Canary and staged rollouts
-
-For high-risk or high-traffic applications, Antideploy supports canary releases that send a configurable percentage of traffic to the new deployment before a full rollout.
-
-```yaml
-deploy:
-  strategy: canary
-  canary_weight: 10         # send 10% of traffic to the new deployment initially
-  canary_analysis:
-    duration: 15m           # observe for 15 minutes
-    error_rate_threshold: 1 # abort if error rate exceeds 1%
-    latency_p99_threshold: 500 # abort if P99 latency exceeds 500ms
-  promote_on_success: true  # automatically promote to 100% if analysis passes
-```
-
-<Note>
-  If the canary analysis detects a regression, Antideploy automatically aborts the rollout and routes all traffic back to the stable deployment. No manual intervention required.
-</Note>
-
-## Deployment notifications
-
-Stay informed about every release without watching the dashboard. Configure deployment notifications under **Settings → Notifications**, or in `antideploy.yaml`:
-
-```yaml
-notifications:
-  on_deploy_success:
-    - channel: slack
-      message: "✅ {{app}} deployed {{commit_short}} to {{environment}}"
-  on_deploy_failure:
-    - channel: slack
-    - channel: email
-  on_rollback:
-    - channel: slack
-    - channel: webhook
-      url: "https://yourapp.com/hooks/deploy"
-```
-
-Notification payloads include the deployment ID, commit SHA, environment, duration, and a deep link back to the deployment detail page in the Antideploy control center.

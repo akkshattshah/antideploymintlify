@@ -1,155 +1,95 @@
 ---
-title: "API Authentication — Keys, Scopes, and Token Usage"
-sidebarTitle: "Authentication"
-description: "Learn how to get an Antideploy API key, pass it in the Authorization header, understand key types and scopes, and safely rotate or revoke keys."
+title: "API Authentication — Project Keys"
+description: "How Antideploy API keys work: one key per application, how to create and revoke them, and what a leaked key can and cannot do."
 ---
 
-Every request to the Antideploy API must be authenticated with an API key. Keys are passed as a Bearer token in the `Authorization` header — there are no cookies, sessions, or OAuth flows involved.
-
-<Warning>
-  API keys grant direct access to your applications, deployments, and infrastructure. Treat them like passwords: never commit them to source control, never log them, and never expose them in client-side code.
-</Warning>
-
----
-
-## Getting an API key
-
-1. Log in to the [Antideploy dashboard](https://app.antideploy.io).
-2. Navigate to **Settings → API Keys**.
-3. Click **Create new key**.
-4. Give the key a descriptive name (e.g., `ci-pipeline`, `monitoring-bot`).
-5. Select the key type and scope (see below).
-6. Copy the key immediately — it is shown only once.
-
-<Note>
-  If you lose a key before saving it, revoke it and generate a new one. Antideploy does not store keys in recoverable form.
-</Note>
-
----
-
-## Key types
-
-### Personal keys
-
-Personal keys are tied to your individual user account and inherit your account permissions. Use personal keys for local development and one-off scripting.
-
-### Organization keys
-
-Organization keys are tied to your Antideploy organization rather than a specific user. They are not invalidated when team members leave. Use organization keys for CI/CD pipelines, infrastructure automation, and any shared tooling.
-
----
-
-## Key scopes
-
-When creating a key, you assign it one of the following scopes. Choose the least-privileged scope that covers your use case.
-
-| Scope | What it can do |
-|---|---|
-| `read-only` | Read apps, deployments, infrastructure, logs. Cannot create, modify, or delete anything. |
-| `deploy` | Everything in `read-only`, plus trigger deployments and rollbacks. Cannot modify app settings or infrastructure. |
-| `admin` | Full access: create and delete apps, scale infrastructure, manage keys. |
-
-<Tip>
-  Use `read-only` keys for monitoring dashboards and observability integrations. Use `deploy` keys for CI/CD pipelines. Reserve `admin` keys for infrastructure automation scripts.
-</Tip>
-
----
-
-## Making authenticated requests
-
-Pass your API key as a Bearer token in the `Authorization` header on every request.
-
-### curl
+Antideploy uses bearer tokens. One key, one application.
 
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.antideploy.io/v1/apps
+curl https://antideploy.com/api/v1/deployments/$TASK_ID \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY"
 ```
 
-### JavaScript (fetch)
+## One key, one application
 
-```javascript
-const res = await fetch('https://api.antideploy.io/v1/apps', {
-  headers: {
-    'Authorization': `Bearer ${process.env.ANTIDEPLOY_API_KEY}`
-  }
-})
-
-const { data, error } = await res.json()
-```
-
-### JavaScript (Node.js with environment variable)
-
-Store your key in an environment variable and never hard-code it:
-
-```javascript
-// .env
-// ANTIDEPLOY_API_KEY=sk_live_...
-
-import 'dotenv/config'
-
-async function listApps() {
-  const res = await fetch('https://api.antideploy.io/v1/apps', {
-    headers: {
-      'Authorization': `Bearer ${process.env.ANTIDEPLOY_API_KEY}`,
-      'Content-Type': 'application/json'
-    }
-  })
-
-  if (!res.ok) {
-    const { error } = await res.json()
-    throw new Error(`${error.code}: ${error.message}`)
-  }
-
-  const { data } = await res.json()
-  return data.items
-}
-```
-
-### Python
-
-```python
-import os
-import requests
-
-headers = {
-    "Authorization": f"Bearer {os.environ['ANTIDEPLOY_API_KEY']}"
-}
-
-response = requests.get(
-    "https://api.antideploy.io/v1/apps",
-    headers=headers
-)
-response.raise_for_status()
-apps = response.json()["data"]["items"]
-```
-
----
-
-## 401 vs 403 errors
-
-Both errors indicate a failed authorization check, but they mean different things:
-
-| Status | Code | Meaning |
-|---|---|---|
-| `401 Unauthorized` | `missing_api_key` or `invalid_api_key` | No `Authorization` header was provided, or the key is malformed, revoked, or does not exist. |
-| `403 Forbidden` | `insufficient_scope` | The key is valid, but its scope does not permit the requested action. |
-
-If you receive a `401`, verify that you are setting the `Authorization` header correctly and that the key has not been revoked. If you receive a `403`, you need a key with a higher scope for the operation you are attempting.
-
----
-
-## Key rotation and revocation
-
-You should rotate API keys regularly, especially for long-lived automations. To rotate a key:
-
-1. Go to **Settings → API Keys** in the dashboard.
-2. Create a new key with the same scope.
-3. Update your integration or environment variables to use the new key.
-4. Revoke the old key by clicking **Revoke** next to it.
-
-Revoked keys are rejected immediately — there is no grace period. Plan rotations to avoid downtime in automated systems.
+A key is issued for a single project and can only act on that project. There
+are no account-wide keys, no organization keys, and no permission scopes to
+choose between.
 
 <Note>
-  Antideploy logs every API request along with the key ID (not the key value) that made it. If you suspect a key has been compromised, revoke it immediately from the dashboard and check the audit log under **Settings → Audit Log**.
+This is deliberate. A key pasted into a project directory ends up in more
+places than its owner intends — a shell history, a config file, a commit. The
+blast radius of that should be one application, not an account.
 </Note>
+
+## Creating a key
+
+Keys are created in the dashboard, per project:
+
+<Steps>
+  <Step title="Open the project">
+    Choose the project from the switcher, then open **API keys**.
+  </Step>
+
+  <Step title="Create a key">
+    Give it a name that says where it will live — `laptop`, `ci`,
+    `claude-code`. The name is only for you.
+  </Step>
+
+  <Step title="Copy it now">
+    The secret is shown **once**, at creation. It is stored as a hash, so it
+    cannot be recovered afterwards — including by us. If you lose it, revoke
+    it and make another.
+  </Step>
+</Steps>
+
+Creating a project through **New project → API** issues its first key in the
+same step.
+
+## What a key can do
+
+| | |
+| --- | --- |
+| Deploy to its application | Yes |
+| Read deployment status, logs of progress, warnings and hazards | Yes |
+| Write environment variables | Yes |
+| **Read environment variable values** | **No** |
+| Act on any other application | No |
+| Create, rename or delete applications | No |
+
+<Warning>
+Secrets are **write-only** over the API. `GET /api/v1/secrets` returns key
+names and nothing else. There is no endpoint that returns a value, so a leaked
+key cannot be used to exfiltrate the credentials it wrote.
+</Warning>
+
+## Revoking
+
+Open **API keys** for the project and revoke the key. It stops working
+immediately — revocation is checked on every request, not cached.
+
+Revoke rather than delete: the row is kept so `Last used` remains visible,
+which is how you work out whether a leaked key was actually used.
+
+## Rotating
+
+There is no in-place rotation. Create the new key, update wherever the old one
+lives, confirm the new one has been used, then revoke the old one. Both work
+during the overlap.
+
+## Handing a key to an AI agent
+
+Give the agent the key **and** this URL:
+
+```
+https://antideploy.com/api/v1
+```
+
+It returns the whole API contract as JSON and needs no key to read it. An
+agent that has been handed only a credential, with no way to learn what the
+credential is for, will either guess or refuse — and refusing is the better of
+those two outcomes.
+
+<Card title="Deploy over the API" icon="rocket" href="/api/deploy">
+  The push flow an agent should follow.
+</Card>

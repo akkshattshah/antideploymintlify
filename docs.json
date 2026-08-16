@@ -26,8 +26,7 @@
             "pages": [
               "deploying/github",
               "deploying/upload",
-              "deploying/cli",
-              "deploying/environments"
+              "api/deploy"
             ]
           },
           {
@@ -35,9 +34,7 @@
             "pages": [
               "infrastructure/overview",
               "infrastructure/compute",
-              "infrastructure/databases",
-              "infrastructure/storage",
-              "infrastructure/networking"
+              "infrastructure/databases"
             ]
           },
           {
@@ -45,57 +42,27 @@
             "pages": [
               "operations/monitoring",
               "operations/logs",
-              "operations/deployments",
-              "operations/scaling",
-              "operations/jobs"
-            ]
-          },
-          {
-            "group": "App Intelligence",
-            "pages": [
-              "intelligence/overview",
-              "intelligence/diagnostics",
-              "intelligence/recommendations"
+              "operations/deployments"
             ]
           },
           {
             "group": "Configuration",
             "pages": [
               "configuration/environment-variables",
-              "configuration/secrets",
-              "configuration/domains",
-              "configuration/security"
+              "configuration/secrets"
             ]
           }
         ]
       },
       {
-        "tab": "API & Integrations",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API Reference",
+            "group": "API",
             "pages": [
               "api/overview",
               "api/authentication",
-              "api/apps",
-              "api/deployments",
-              "api/infrastructure",
-              "api/logs"
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": [
-              "cli/overview",
-              "cli/commands"
-            ]
-          },
-          {
-            "group": "Integrations",
-            "pages": [
-              "integrations/mcp",
-              "integrations/github",
-              "integrations/webhooks"
+              "api/deploy"
             ]
           }
         ]

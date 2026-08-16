@@ -1,7 +1,7 @@
 ---
 title: "Connect GitHub to Antideploy for Automatic Deployments"
 sidebarTitle: "GitHub"
-description: "Connect any GitHub repo to Antideploy and get automatic deployments on every push, plus instant preview URLs for every pull request."
+description: "Connect a GitHub repository to Antideploy and redeploy automatically on every push to your default branch."
 ---
 
 Connecting a GitHub repository is the fastest way to ship continuously with Antideploy. Once linked, every push to your chosen branch triggers a new deployment automatically — no manual steps, no scripts to maintain. Antideploy detects your framework, installs dependencies, builds your app, and routes live traffic, all without configuration in most cases.
@@ -56,22 +56,6 @@ If a build fails, the previous deployment stays live and you receive a notificat
 
 ---
 
-## Deploy previews for pull requests
-
-Every pull request opened against your production branch automatically receives its own **preview deployment** with a unique URL. The URL is posted as a comment on the pull request by the Antideploy GitHub App.
-
-Preview deployments:
-- Use the same build pipeline as production
-- Inherit your staging environment variables by default (configurable per project)
-- Are destroyed automatically when the pull request is closed or merged
-- Can be promoted directly to production without a rebuild
-
-<Note>
-  Preview URLs are publicly accessible by default. Enable **Preview authentication** in **Settings → Security** to require a password for all preview deployments.
-</Note>
-
----
-
 ## Build settings
 
 Antideploy auto-detects the correct build settings for most frameworks. If your project requires custom settings, navigate to **Settings → Build** to configure them manually.
@@ -83,27 +67,6 @@ Antideploy auto-detects the correct build settings for most frameworks. If your 
 | **Install command** | Package installation command | `npm install` |
 | **Node version** | Node.js version for the build environment | LTS |
 
-<Tip>
-  Override build settings per-branch by adding an `antideploy.json` file to your repository root. Settings in this file take precedence over dashboard configuration.
-</Tip>
-
----
-
-## Environment-specific branches
-
-Map different branches to different environments to create a full promotion workflow:
-
-| Branch | Environment | URL pattern |
-|---|---|---|
-| `main` | Production | `yourapp.antideploy.app` |
-| `dev` | Staging | `yourapp-staging.antideploy.app` |
-| Pull requests | Preview | `yourapp-pr-42.antideploy.app` |
-
-To add a branch-to-environment mapping, go to **Settings → Environments** and click **Add branch mapping**. Select the branch, choose the target environment, and save.
-
-<Note>
-  Each environment has its own set of environment variables and secrets. See [Environments](/deploying/environments) for full details on managing per-environment configuration.
-</Note>
 
 ---
 

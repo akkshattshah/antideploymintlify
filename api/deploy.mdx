@@ -1,0 +1,151 @@
+---
+title: "Deploy from the CLI or an AI Agent"
+description: "Push a project directory to Antideploy over the REST API and poll it to completion — the flow an AI coding agent uses when you tell it to ship."
+---
+
+Antideploy has no CLI to install. Deploys are a single HTTP request, which
+means anything that can run `curl` — including a coding agent — can ship your
+project without extra tooling.
+
+## Get a key
+
+Create a project in the dashboard and copy its API key. Keys are **scoped to
+one application**, so the key itself identifies where the code goes; you never
+pass an application id.
+
+<Warning>
+A key can deploy to its application and write its environment variables. Treat
+it like a deploy credential. Secrets are write-only over the API — nothing,
+including a valid key, can read values back.
+</Warning>
+
+## Deploy
+
+Run this from the project directory. Send the **whole tree**, not just the
+entry point.
+
+```bash
+tar czf - --exclude=.git --exclude=node_modules . |
+  curl -X POST https://antideploy.com/api/v1/deploy \
+    -H "Authorization: Bearer $ANTIDEPLOY_KEY" \
+    -F "archive=@-"
+```
+
+<Warning>
+Pushing only `index.html` (or any single entry file) **succeeds**. It builds,
+deploys, and serves a page whose scripts, styles and images all 404. This is
+the most common mistake on this API. Antideploy warns you when a page
+references files that were not in the upload, but the deploy still goes
+through — check the `files` array in the response.
+</Warning>
+
+### Response
+
+```json
+{
+  "status": "queued",
+  "taskId": "6a7c6cfe-e7fd-400f-927c-1be313f74e71",
+  "applicationId": "d8cb3d74-5c3b-483d-8a31-e3b4efec6771",
+  "contentHash": "92f97883b888…",
+  "fileCount": 4,
+  "files": ["assets/app.js", "assets/logo.png", "data.js", "index.html"],
+  "secretsWritten": 0,
+  "watch": "https://antideploy.com/api/v1/deployments/6a7c6cfe-…",
+  "dashboard": "https://antideploy.com/app/d8cb3d74-…"
+}
+```
+
+`files` is the manifest of what was actually stored, capped at 50 entries with
+the remainder counted in `filesTruncated`. **Check it.** If you expected a
+project and see one file, the upload was wrong.
+
+An identical push returns `200` with `{"status": "unchanged"}` and builds
+nothing. Add `-F "force=true"` to rebuild anyway.
+
+## Send environment variables
+
+```bash
+tar czf - . | curl -X POST https://antideploy.com/api/v1/deploy \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY" \
+  -F "archive=@-" \
+  -F "env=$(cat .env)"
+```
+
+Accepts a `.env`-formatted string or a JSON object. Applied to the deploy in
+the same request.
+
+## Poll to completion
+
+```bash
+curl https://antideploy.com/api/v1/deployments/$TASK_ID \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY"
+```
+
+Poll until `status` is `succeeded` or `failed`. The response carries per-step
+progress, the analyzed spec, and two fields worth reading rather than ignoring:
+
+- **`warnings`** — things that will work but probably aren't what you meant.
+  Missing referenced assets, no lockfile, two deployables in one repository.
+- **`hazards`** — structured facts about what *won't* work once live. Uploads
+  written to a temporary disk, scheduled tasks that never fire.
+
+<Note>
+If you are an agent reporting back to a user: relay warnings and hazards. A
+deploy can be `succeeded` and still not do what its author expects, and the
+person who asked you to ship has no other way to find out.
+</Note>
+
+## Alternative: per-file form
+
+Supported for existing clients. One `files` part and one `paths` part per
+file, in the same order.
+
+```bash
+curl -X POST https://antideploy.com/api/v1/deploy \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY" \
+  -F "files=@index.html"      -F "paths=index.html" \
+  -F "files=@assets/app.js"   -F "paths=assets/app.js" \
+  -F "files=@assets/logo.png" -F "paths=assets/logo.png"
+```
+
+Mismatched counts are rejected with `paths_mismatch` rather than silently
+flattening your directory structure. Prefer `archive` — it cannot get this
+wrong.
+
+## Errors
+
+| Status | Code | Meaning |
+| --- | --- | --- |
+| 400 | `empty` | No files received. |
+| 400 | `bad_request` | Not multipart, or both `archive` and `files` sent. |
+| 400 | `bad_archive` | Not a readable tar (gzipped or plain). |
+| 400 | `paths_mismatch` | `files` and `paths` counts differ. |
+| 400 | `too_large` | Over the size or file-count limit. |
+| 401 | `unauthorized` | Unknown or revoked key. |
+| 409 | `deploy_in_progress` | One deploy at a time per application. Includes the running `taskId`. |
+| 429 | `rate_limited` | Over 20 deploys in an hour. |
+
+Every error includes a `documentation` URL.
+
+## Limits
+
+| | |
+| --- | --- |
+| Deploys per hour, per application | 20 |
+| Concurrent deploys per application | 1 |
+| Files per push | 4,000 |
+| Per file | 5 MB |
+| Per push, total | 28 MB |
+
+Build output and dependency directories (`node_modules`, `.git`, `dist`,
+`.next`) are excluded server-side regardless of what you send.
+
+## Machine-readable contract
+
+```bash
+curl https://antideploy.com/api/v1
+```
+
+Returns the whole contract as JSON — endpoints, request shapes, error codes
+and current limits. No key required. If you are an agent that has been handed
+a key and nothing else, start here.

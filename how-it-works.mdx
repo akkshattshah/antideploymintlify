@@ -1,160 +1,99 @@
 ---
-title: "How Antideploy Analyzes Your Code and Deploys Your App"
-sidebarTitle: "How It Works"
-description: "Learn how Antideploy reads your codebase, infers infrastructure requirements, and manages your entire deployment lifecycle automatically."
+title: "How Antideploy Analyzes Your Code and Deploys It"
+description: "What happens between handing Antideploy your project and getting a live URL — analysis, provisioning, build, and release."
 ---
 
-When you give Antideploy your code — through GitHub, the CLI, or a ZIP upload — it doesn't ask you to fill out a form describing your application. Instead, it reads your code directly and figures out everything it needs to know: what your app is, what it depends on, what infrastructure it requires, and how to build and run it. This page explains exactly what happens at each stage.
-
-## The Deployment Lifecycle
+You never fill in a form describing your application. Antideploy reads the
+code and works out what it is, what it depends on, and how to run it. This
+page is what happens at each stage.
 
 <Steps>
-  <Step title="Code Ingestion">
-    Antideploy receives your source code — either as a repository push, a CLI upload, or a ZIP archive. It indexes every file in your project to prepare for analysis. No files are ignored by default; the full project is available to the analysis engine.
+  <Step title="Ingest">
+    Your source arrives as a GitHub repository, a folder upload, or an archive
+    pushed to the API. Dependency and build directories (`node_modules`,
+    `.git`, `dist`, `.next`, `build`) are excluded — you don't need to clean
+    the project first.
   </Step>
-  <Step title="Code Analysis">
-    The analysis engine reads your project to identify:
 
-    - **Language and runtime** — detected from file extensions, runtime configuration files (`.nvmrc`, `.python-version`, `go.mod`, `Gemfile`), and lock files
-    - **Framework** — identified from package manifests, directory structure, config files, and entry points
-    - **Build system** — detected from `package.json` scripts, `Makefile`, `pyproject.toml`, and similar files
-    - **Entry points** — the server process(es) Antideploy needs to start after the build
-    - **Environment variables** — discovered from `.env.example`, `dotenv` usage, and config loading patterns (values are never read, only key names)
-    - **Dependencies** — catalogued from lock files to ensure a reproducible build environment
+  <Step title="Analysis">
+    Antideploy reads your manifests and source to determine:
+
+    - **Runtime** — Node, Python, Go, Ruby, Java, or a Dockerfile
+    - **Framework** — Next.js, Vite, Express, Flask, Django, Rails, or a static site
+    - **Build and start commands** — inferred from your scripts and conventions
+    - **Port** — what your app will listen on
+    - **Database** — whether your code uses Postgres, and through which ORM
+
+    Every conclusion comes with the evidence for it, so you can see *why* it
+    decided something before you deploy.
 
     <Note>
-      Antideploy never reads the values of secrets or environment variables from your code — only the names, so it can prompt you to supply them before the first deployment.
+    Antideploy reads the names of environment variables your code expects, so
+    it can tell you what to supply. It never reads their values.
     </Note>
   </Step>
-  <Step title="Infrastructure Inference">
-    Based on analysis results, Antideploy determines exactly what infrastructure your application needs. This inference is specific to your stack — not a one-size-fits-all template.
 
-    See [Infrastructure Inference Examples](#infrastructure-inference-examples) below for a breakdown of what gets provisioned for common stacks.
+  <Step title="Provisioning">
+    If your code uses Postgres, a database is created and its connection
+    string is injected as `DATABASE_URL`.
+
+    This is the only infrastructure Antideploy provisions. If your project
+    also needs object storage, Redis, a queue or a scheduler, analysis will
+    say so — as a warning or a hazard — and you supply it yourself.
   </Step>
-  <Step title="Infrastructure Provisioning">
-    Antideploy provisions all required infrastructure in parallel before your build starts:
 
-    - Compute instances are sized based on framework and detected workload type
-    - PostgreSQL databases are created with credentials injected automatically as environment variables
-    - Object storage buckets are created and configured with the appropriate access policies
-    - Queues and worker processes are set up from job definitions in your code
-    - Cron jobs are registered from scheduler configuration
-    - Networking, load balancing, and internal DNS are configured automatically
+  <Step title="Build">
+    Your project is built into a container image.
 
-    Provisioning typically completes in 15–30 seconds. You never write a single line of infrastructure configuration.
+    Most projects go through buildpacks, which detect the runtime and produce
+    an image without a Dockerfile. If your repository has its own Dockerfile,
+    that is used instead.
+
+    Static sites skip the buildpack lifecycle entirely — there is nothing to
+    compile, so the files are layered onto a minimal server image. This takes
+    a static site from roughly three minutes to about seventy seconds.
+
+    Build logs are captured and shown in the dashboard, including on failure.
   </Step>
-  <Step title="Build Execution">
-    Antideploy runs your build pipeline in an isolated, reproducible environment:
 
-    1. **Dependencies installed** — using the package manager and lock file from your project (`npm ci`, `pip install`, `bundle install`, etc.)
-    2. **Build command executed** — the detected or configured build command runs (`npm run build`, `python manage.py collectstatic`, etc.)
-    3. **Artifact packaging** — build outputs are collected and prepared for deployment
-    4. **Image creation** — a minimal runtime image is assembled from your build artifacts
+  <Step title="Release">
+    The image is deployed and your environment variables are injected. The
+    previous version keeps serving until the new one passes its health check.
 
-    Build logs stream in real time to the dashboard and CLI.
+    Your app is then reachable over HTTPS at a generated URL.
   </Step>
-  <Step title="Deployment">
-    Antideploy deploys your application using a zero-downtime rollout:
 
-    - The new version starts alongside the existing version (if one exists)
-    - Health checks confirm the new version is responding correctly
-    - Traffic shifts to the new version incrementally
-    - The previous version is kept on standby for instant rollback
+  <Step title="Running">
+    Apps scale to zero when idle, so an app nobody is using costs nothing. The
+    first request after an idle period pays a cold start.
 
-    Your application is never unavailable during a deployment.
-  </Step>
-  <Step title="Post-Deploy Activation">
-    Immediately after a successful deployment, Antideploy activates the full operations stack:
-
-    - **SSL certificate** — issued via Let's Encrypt and attached to your deployment URL
-    - **Domain assignment** — your app receives a `*.antideploy.app` subdomain; custom domains can be added at any time
-    - **Health monitoring** — uptime checks begin immediately, with configurable alert thresholds
-    - **Log aggregation** — runtime logs are collected and indexed for search
-    - **Metrics collection** — request rate, latency, error rate, and resource utilization are tracked continuously
-    - **App Intelligence activation** — the intelligence layer ingests your deployment context and begins monitoring for anomalies
-  </Step>
-  <Step title="Continuous Operations">
-    After deployment, Antideploy continues to manage your application:
-
-    - **Auto-scaling** — compute scales up under load and back down during quiet periods
-    - **Automatic restarts** — crashed processes are restarted immediately with backoff logic
-    - **Database maintenance** — automated backups, connection pooling, and version patch management
-    - **Certificate renewal** — SSL certificates are renewed automatically before expiry
-    - **Dependency vulnerability scanning** — your dependency tree is monitored for known CVEs
+    Antideploy checks each app's health every few minutes and emails you when
+    an app changes state — goes down, or recovers.
   </Step>
 </Steps>
 
----
+## Warnings and hazards
 
-## Infrastructure Inference Examples
-
-Antideploy infers infrastructure requirements from your actual code — not from a template you fill out. Here are examples of what gets provisioned for common stacks:
-
-| Stack Detected | Automatically Provisioned |
-|---|---|
-| **Next.js** | Compute (Node.js), CDN for static assets, edge routing |
-| **Next.js + Prisma** | Compute, CDN, PostgreSQL, connection pooler |
-| **Django + Postgres ORM** | Compute (Python), PostgreSQL, static file storage |
-| **Django + Celery** | Compute, PostgreSQL, Redis queue, worker processes |
-| **Express.js API** | Compute (Node.js), optional PostgreSQL if ORM detected |
-| **FastAPI** | Compute (Python), PostgreSQL if SQLAlchemy detected |
-| **Laravel** | Compute (PHP-FPM), PostgreSQL or MySQL, Redis, storage |
-| **Rails** | Compute (Ruby), PostgreSQL, Active Storage bucket |
-| **Nuxt.js** | Compute (Node.js), CDN, SSR edge routing |
-| **SvelteKit** | Compute (Node.js), CDN, adapter-auto routing |
-| **Go HTTP server** | Compute (Go binary), PostgreSQL if `database/sql` detected |
-| **Static site (any)** | CDN-only deployment, no compute provisioned |
-
-<Tip>
-  Antideploy detects dozens of additional frameworks and languages beyond this table. If your stack isn't listed, it will likely still be detected correctly — and if anything is missed, you can override any setting in the dashboard or via `antideploy.json`.
-</Tip>
-
----
-
-## Supported Languages and Frameworks
+Analysis produces two kinds of finding, and the difference matters.
 
 <CardGroup cols={2}>
-  <Card title="JavaScript & TypeScript" icon="js">
-    Next.js, Nuxt.js, SvelteKit, Remix, Astro, Express, Fastify, NestJS, Hono, Vite (static)
+  <Card title="Warnings" icon="triangle-exclamation">
+    Things that will work but may not be what you meant. A missing lockfile,
+    a page referencing files that weren't uploaded, two deployable projects in
+    one repository.
   </Card>
-  <Card title="Python" icon="python">
-    Django, FastAPI, Flask, Starlette, Litestar, Tornado, Celery workers, Python scripts
-  </Card>
-  <Card title="Ruby" icon="gem">
-    Ruby on Rails, Sinatra, Hanami, Rack applications, Sidekiq workers
-  </Card>
-  <Card title="PHP" icon="php">
-    Laravel, Symfony, WordPress, Statamic, plain PHP with Composer
-  </Card>
-  <Card title="Go" icon="golang">
-    Standard `net/http`, Gin, Echo, Fiber, Chi, gRPC servers
-  </Card>
-  <Card title="Other Runtimes" icon="code">
-    Java (Spring Boot, Quarkus), Rust (Axum, Actix), .NET (ASP.NET Core), Elixir (Phoenix)
+
+  <Card title="Hazards" icon="circle-exclamation">
+    Things that will not work once deployed. Files written to local disk and
+    lost on restart. Background workers and scheduled jobs that will never
+    run.
   </Card>
 </CardGroup>
 
----
+Both are returned as structured data through the API, not just rendered in the
+dashboard — so a script or agent can read and relay them.
 
-## The App Intelligence Layer
-
-App Intelligence is Antideploy's context-aware operations layer. Unlike generic monitoring tools, App Intelligence understands your specific stack, your dependency versions, and your deployment history — giving it the context to explain issues in terms of your actual code.
-
-When an issue occurs, App Intelligence:
-
-- **Identifies the root cause** — correlating logs, metrics, and code context rather than showing you raw stack traces
-- **Explains the issue in plain language** — written for developers, not for SREs
-- **Suggests a fix** — based on your actual code and known solutions for your framework and version
-- **Tracks recurrence** — alerts you if the same issue reappears across deployments
-
-<Note>
-  App Intelligence activates automatically after your first successful deployment. No configuration, no instrumentation code, and no SDK to install.
-</Note>
-
----
-
-## Zero Cloud Knowledge Required
-
-Antideploy is designed so that you never need to understand the underlying cloud infrastructure. You don't need to know what instance type your app is running on, which availability zone your database lives in, or how your load balancer is configured. All of those decisions are made automatically and adjusted over time.
-
-If you do want to customize infrastructure — to specify minimum instance counts, set resource limits, or configure advanced networking — you can do that through the dashboard or an `antideploy.json` file in your repository. But it's always optional, and the defaults work for the vast majority of applications.
+<Warning>
+A deploy can succeed and still not do what its author expects. Hazards are how
+you find that out before your users do.
+</Warning>

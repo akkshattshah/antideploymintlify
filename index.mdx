@@ -1,74 +1,81 @@
 ---
-title: "Antideploy: Deploy and Operate Any App Without Touching Cloud Config"
+title: "Antideploy: Deploy Any App Without Touching Cloud Config"
 sidebarTitle: "Home"
-description: "Antideploy automatically provisions, deploys, and operates every component your app needs — compute, database, storage, networking, and more — from a single platform."
+description: "Antideploy reads your code, works out what it needs to run, builds it, and deploys it — no Dockerfile, no YAML, no cloud console."
 ---
 
-Antideploy is the deployment and operations platform for apps built anywhere — with Claude Code, Codex, Cursor, traditional development, or any low-code tool. Bring your existing application through GitHub, a folder upload, the CLI, or an API call, and Antideploy handles everything else: analyzing your codebase, provisioning infrastructure, building and deploying your app, and keeping it running in production.
+Antideploy deploys apps built anywhere — with Claude Code, Cursor, Codex,
+traditional development, or a low-code tool. Bring your project through
+GitHub, a folder upload, or an API call. Antideploy reads the code, works out
+what it is and what it needs, builds it, and runs it.
+
+You do not describe your app to it. It reads your files and tells you what it
+found, with the evidence, before anything is built.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Deploy your first app in minutes — no cloud configuration required.
+    Deploy your first app in five minutes.
   </Card>
+
   <Card title="How It Works" icon="circle-info" href="/how-it-works">
-    Learn how Antideploy analyzes your code and provisions infrastructure automatically.
+    What happens between pushing code and getting a URL.
   </Card>
+
   <Card title="Deploy from GitHub" icon="github" href="/deploying/github">
-    Connect your repository and deploy on every push with zero configuration.
+    Connect a repository and redeploy on every push.
   </Card>
-  <Card title="App Intelligence" icon="brain" href="/intelligence/overview">
-    AI-powered diagnostics, root cause analysis, and automated fixes for your apps.
-  </Card>
-  <Card title="API Reference" icon="code" href="/api/overview">
-    Automate deployments, inspect health, and manage infrastructure via REST API.
-  </Card>
-  <Card title="CLI & MCP" icon="terminal" href="/cli/overview">
-    Operate your apps from the terminal or directly inside your AI coding environment.
+
+  <Card title="Deploy over the API" icon="terminal" href="/api/deploy">
+    One HTTP request. What an AI coding agent uses.
   </Card>
 </CardGroup>
 
-## Everything Your App Needs, Automatically
+## What gets handled for you
 
-When you deploy an app on Antideploy, the platform reads your codebase and determines what infrastructure it needs. There is nothing to configure manually.
-
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card title="Compute" icon="server" href="/infrastructure/compute">
-    Auto-scaled containers with zero cold starts
+    Containers built and run for you. Scales to zero when idle, so an app
+    nobody is using costs nothing.
   </Card>
-  <Card title="Databases" icon="database" href="/infrastructure/databases">
-    Managed PostgreSQL with automatic backups
+
+  <Card title="PostgreSQL" icon="database" href="/infrastructure/databases">
+    Provisioned automatically when your code uses it, with the connection
+    string injected as `DATABASE_URL`.
   </Card>
-  <Card title="Storage" icon="hard-drive" href="/infrastructure/storage">
-    Object storage for files, assets, and uploads
+
+  <Card title="HTTPS" icon="lock" href="/infrastructure/overview">
+    Every app is served over TLS on a generated URL.
   </Card>
-  <Card title="Networking & SSL" icon="shield-check" href="/infrastructure/networking">
-    Custom domains with automatic HTTPS
-  </Card>
-  <Card title="Secrets" icon="key" href="/configuration/secrets">
-    Encrypted environment variables and secrets
-  </Card>
-  <Card title="Background Jobs" icon="clock" href="/operations/jobs">
-    Cron jobs, queues, and background workers
+
+  <Card title="Configuration" icon="key" href="/configuration/environment-variables">
+    Environment variables and secrets, encrypted at rest and injected at
+    release.
   </Card>
 </CardGroup>
 
-## Get Up and Running
+## Using an AI coding agent?
 
-<Steps>
-  <Step title="Create an account">
-    Sign up at [app.antideploy.io](https://app.antideploy.io). No credit card required to start.
-  </Step>
-  <Step title="Connect your app">
-    Link a GitHub repository, upload a ZIP, or run `antideploy deploy` in your project directory.
-  </Step>
-  <Step title="Antideploy analyzes and builds">
-    The platform detects your framework, language, and dependencies, then provisions the exact infrastructure your app needs.
-  </Step>
-  <Step title="Your app is live">
-    Get a production URL with HTTPS, a control center dashboard, logs, metrics, and everything else — ready to use.
-  </Step>
-</Steps>
+Give your agent the project's API key and this URL:
 
-<Tip>
-  Already inside Claude Code, Cursor, or another AI coding environment? Install the [MCP integration](/integrations/mcp) to deploy, check logs, and diagnose issues without leaving your editor.
-</Tip>
+```
+https://antideploy.com/api/v1
+```
+
+That returns the complete API contract as JSON — endpoints, request shapes,
+error codes and limits. No key is needed to read it. An agent can go from
+"here is a key" to a working deploy without a browser.
+
+<Card title="Deploy over the API" icon="terminal" href="/api/deploy">
+  The full reference, with the one command that ships a project directory.
+</Card>
+
+## What Antideploy does not do yet
+
+<Warning>
+No object storage, custom domains, background workers, cron jobs, staging
+environments, or horizontal scaling. Each app runs on a single instance that
+scales to zero.
+
+Antideploy detects when your project needs one of these and tells you at
+analysis time — before you deploy, not after.
+</Warning>

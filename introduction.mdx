@@ -1,90 +1,106 @@
 ---
-title: "Antideploy: Zero-Config Cloud Deployment for Any App"
-sidebarTitle: "Introduction"
-description: "Antideploy is the deployment and operations platform for any app — built with AI tools, vibe-coded, or hand-crafted — with zero infrastructure setup."
+title: "Antideploy: Deploy Any App Without Configuring Infrastructure"
+description: "Antideploy reads your code, works out what it needs to run, and deploys it — no Dockerfile, no YAML, no cloud console."
 ---
 
-Antideploy takes any application you've built — whether with Claude Code, Cursor, Codex, a low-code tool, or classic hand-written code — and handles everything that comes after: analyzing your codebase, provisioning infrastructure, running your build pipeline, deploying to production, and keeping it healthy over time. You write (or generate) the code. Antideploy handles everything else.
+Antideploy takes a project and gets it running in production. You don't
+describe your app to it — it reads the code and works out what it is, what it
+depends on, how to build it, and how to start it.
 
-## What Antideploy Is
+## Getting code in
 
-Antideploy is a **deployment and operations platform**, not an app builder like Lovable, Bolt, or Replit. You bring your own application from whatever tool or workflow you already use, and Antideploy figures out what it needs to run — then provisions it automatically.
-
-When you connect a repository or upload your code, Antideploy reads your project and determines:
-
-- **Language and runtime** — Node.js, Python, Go, Ruby, PHP, and more
-- **Framework** — Next.js, Django, Laravel, FastAPI, Express, Rails, and dozens of others
-- **Database requirements** — detected from ORM configuration, connection strings, or migration files
-- **Background workers, queues, and cron jobs** — inferred from job definitions and scheduler config
-- **Static assets and media storage** — detected from asset pipeline and upload code
-
-It then provisions exactly the infrastructure your app requires, with no YAML, no Terraform, no cloud console configuration.
-
-## Who It's For
-
-<CardGroup cols={2}>
-  <Card title="AI-Assisted Developers" icon="robot">
-    You're using Claude Code, Codex, Cursor, or similar tools to build apps fast. Antideploy gets those apps live just as fast — without requiring you to become a DevOps engineer.
+<CardGroup cols={3}>
+  <Card title="GitHub" icon="github" href="/deploying/github">
+    Connect a repository. Every push to the default branch redeploys.
   </Card>
-  <Card title="Vibe-Coders" icon="wand-magic-sparkles">
-    You build by feel, iterate quickly, and don't want infrastructure to slow you down. Push code and get a live URL — Antideploy handles the rest.
+
+  <Card title="Upload" icon="upload" href="/deploying/upload">
+    Drag a folder or ZIP into the dashboard. No Git required.
   </Card>
-  <Card title="Solo Founders & Indie Hackers" icon="rocket">
-    Ship your product without hiring an ops team. Antideploy manages scaling, SSL, domains, backups, and monitoring so you can stay focused on building.
-  </Card>
-  <Card title="Teams Tired of Infra Toil" icon="users">
-    Stop maintaining Kubernetes clusters, writing Dockerfiles, and debugging CI pipelines. Antideploy gives your team a unified deployment platform with zero maintenance overhead.
+
+  <Card title="API" icon="terminal" href="/api/deploy">
+    Push a project directory over HTTP. What a coding agent uses.
   </Card>
 </CardGroup>
 
-<Note>
-  Antideploy works with code you've already written. If you haven't built your app yet, use any tool you prefer — then come back here to deploy it.
-</Note>
+## What happens after that
 
-## What You Never Configure Manually
+<Steps>
+  <Step title="Analysis">
+    Antideploy reads your files and produces a spec: language, framework,
+    build command, start command, port, and whether it needs a database. You
+    can see exactly what it concluded, and the evidence for each conclusion,
+    before anything is built.
+  </Step>
 
-Antideploy automatically handles everything in this list. You never touch it unless you want to override a default:
+  <Step title="Provisioning">
+    If your code uses Postgres, a database is created and its connection
+    string is injected as `DATABASE_URL`. This is the only infrastructure
+    Antideploy provisions today.
+  </Step>
 
-- **Compute** — instance sizing, auto-scaling, health checks, and restarts
-- **PostgreSQL** — provisioned, connected, and backed up automatically when detected
-- **Object storage** — provisioned for file uploads, media, and static assets
-- **SSL certificates** — issued and renewed automatically for every deployment
-- **Networking** — internal service mesh, load balancing, and edge routing
-- **Secrets management** — encrypted environment variable storage with injection at runtime
-- **Background queues and workers** — provisioned from your job definitions
-- **Cron jobs** — scheduled from your existing cron or task-scheduler config
-- **Build pipeline** — detected and executed without a CI configuration file
-- **Monitoring and alerting** — activated automatically after your first successful deploy
+  <Step title="Build">
+    Your project is built into a container image. Static sites skip the
+    buildpack step entirely and are layered onto a minimal server, which takes
+    them from roughly three minutes to about seventy seconds.
+  </Step>
 
-## The Full Deployment Lifecycle
+  <Step title="Release">
+    The container is deployed and given an HTTPS URL. Environment variables
+    are injected at this point. The previous version keeps serving until the
+    new one reports healthy.
+  </Step>
+</Steps>
 
-Antideploy isn't just a deploy button — it manages your application continuously:
+## What you never configure
 
-1. **Analyze** — reads your code to understand what your app is and what it needs
-2. **Provision** — creates exactly the infrastructure required, nothing more
-3. **Build** — compiles, bundles, and prepares your application for production
-4. **Deploy** — rolls out your app with zero-downtime deployments by default
-5. **Monitor** — tracks uptime, performance, and errors from the moment you go live
-6. **Scale** — adjusts compute resources automatically under load
-7. **Diagnose** — surfaces issues in plain language via the App Intelligence layer
+- **Containers.** No Dockerfile unless you want one; if you have one, it's used.
+- **Build and start commands.** Inferred from your project, and shown to you.
+- **Postgres.** Created and wired up when your code needs it.
+- **TLS.** Every app gets HTTPS.
+- **Idle cost.** Apps scale to zero and cost nothing while nobody is using them.
 
-<Tip>
-  The App Intelligence layer understands your app's specific stack and context. When something goes wrong, it doesn't just show you raw logs — it explains what happened and suggests fixes in terms of your actual code.
-</Tip>
+## What Antideploy does not do yet
 
-## Start Deploying
+Being straight about this is more useful than a longer feature list.
+
+<Warning>
+- **No object storage.** Files written to disk are lost on restart or redeploy.
+  Bring your own S3-compatible bucket.
+- **No custom domains.** Apps are served on a generated HTTPS URL.
+- **No background workers or cron.** If your project defines them, Antideploy
+  tells you at analysis time — they will not run.
+- **No staging or preview environments.** One deployed version per project.
+- **No horizontal scaling.** Each app runs on a single instance that scales to
+  zero when idle.
+- **No Redis or caching layer.** Supply your own `REDIS_URL`.
+</Warning>
+
+Antideploy raises these as **hazards** during analysis, before you deploy,
+rather than letting you discover them in production.
+
+## Operating a deployed app
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="bolt" href="/quickstart">
-    Deploy your first app in under 5 minutes. Connect GitHub, use the CLI, or upload a ZIP.
+  <Card title="Logs" icon="terminal" href="/operations/logs">
+    Search and read your application's output.
   </Card>
-  <Card title="How It Works" icon="gears" href="/how-it-works">
-    Understand how Antideploy analyzes your code and provisions infrastructure automatically.
+
+  <Card title="Deployments" icon="clock-rotate-left" href="/operations/deployments">
+    Full history, with one-click rollback to any previous release.
   </Card>
-  <Card title="Deploying Methods" icon="upload" href="/deploying">
-    Compare GitHub integration, the CLI, and dashboard uploads to pick the right workflow.
+
+  <Card title="Monitoring" icon="heart-pulse" href="/operations/monitoring">
+    Health checks, with email when an app goes down or recovers.
   </Card>
-  <Card title="Dashboard" icon="chart-line" href="https://app.antideploy.io" target="_blank">
-    Sign in or create a free account to deploy your first application right now.
+
+  <Card title="Environment variables" icon="key" href="/configuration/environment-variables">
+    Configuration and secrets, encrypted at rest.
   </Card>
 </CardGroup>
+
+## Start
+
+<Card title="Deploy something in five minutes" icon="rocket" href="/quickstart">
+  Connect a repository, upload a folder, or push over the API.
+</Card>

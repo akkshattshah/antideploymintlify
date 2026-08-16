@@ -1,7 +1,7 @@
 ---
 title: "Environment Variables: Managing Your App Configuration"
 sidebarTitle: "Env Variables"
-description: "Set, update, and manage environment variables per app and environment — from the dashboard or CLI — to configure your app without changing code."
+description: "Set, update, and manage environment variables per app from the dashboard or the API, to configure your app without changing code."
 ---
 
 Environment variables let you configure your application's behavior without touching your codebase. Use them to set database URLs, toggle feature flags, define API endpoints, or pass any non-sensitive configuration your app needs at runtime.
@@ -12,51 +12,7 @@ Environment variables let you configure your application's behavior without touc
 
 ## Setting variables from the dashboard
 
-Open your app in the control center, navigate to **Configuration → Environment Variables**, and click **Add Variable**. Enter the key and value, choose which environment the variable applies to, and click **Save**. Changes take effect on the next deployment unless live reload is enabled for that variable.
-
-## Setting variables from the CLI
-
-<CodeGroup>
-```bash Set a single variable
-antideploy env set DATABASE_URL=postgres://user:pass@host:5432/mydb --app my-app
-```
-
-```bash Set multiple variables from a file
-antideploy env set --file .env --app my-app
-```
-
-```bash Get a single variable's value
-antideploy env get MY_VAR --app my-app
-```
-
-```bash List all variables
-antideploy env list --app my-app
-```
-
-```bash Remove a variable
-antideploy env unset MY_VAR --app my-app
-```
-</CodeGroup>
-
-Add `--env production` or `--env staging` to any of these commands to target a specific environment. Without the flag, the command applies to your default environment.
-
-## Environment-specific variables
-
-Each app in Antideploy can have separate variable sets for **production** and **staging** (and any additional environments you create). This lets you point your staging app at a test database while production uses the live one — with the same codebase.
-
-To manage environment-specific variables:
-
-<Steps>
-  <Step title="Select your environment">
-    Use the **Environment** dropdown at the top of the Environment Variables panel to switch between production, staging, and any custom environments.
-  </Step>
-  <Step title="Set the variable">
-    Add or update variables in the selected environment. Values set here override any global variables with the same key.
-  </Step>
-  <Step title="Deploy to apply">
-    Trigger a new deployment to roll out the updated configuration to that environment.
-  </Step>
-</Steps>
+Open your app in the control center, navigate to **Configuration → Environment Variables**, and click **Add Variable**. Enter the key and value, then click **Save**. Changes take effect on the next deployment.
 
 ## Variables injected automatically by Antideploy
 
@@ -64,12 +20,8 @@ Antideploy injects a set of variables into every deployment automatically. You d
 
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | Connection string for your provisioned database |
-| `STORAGE_URL` | Base URL for your provisioned object storage bucket |
-| `REDIS_URL` | Connection string for your provisioned Redis instance (if enabled) |
-| `ANTIDEPLOY_APP_ID` | The unique ID of your app |
-| `ANTIDEPLOY_ENV` | The current environment name (`production`, `staging`, etc.) |
-| `ANTIDEPLOY_DEPLOY_ID` | The ID of the current deployment |
+| `DATABASE_URL` | Connection string for your provisioned database, if one was created |
+| `PORT` | The port your app must listen on |
 
 If you set a variable with the same name as an automatically injected one, your value takes precedence.
 
@@ -86,3 +38,24 @@ If you set a variable with the same name as an automatically injected one, your 
 <Tip>
   Use a `.env.example` file in your repository to document which variables your app expects. Your team members and future deployments will thank you.
 </Tip>
+
+## Setting variables over the API
+
+Variables can be written with a project API key. They are write-only — nothing,
+including a valid key, can read the values back.
+
+```bash
+curl -X PUT https://antideploy.com/api/v1/secrets   -H "Authorization: Bearer $ANTIDEPLOY_KEY"   -H "Content-Type: application/json"   -d '{"DATABASE_URL":"postgres://..."}'
+```
+
+You can also send a whole `.env` alongside a deploy:
+
+```bash
+tar czf - . | curl -X POST https://antideploy.com/api/v1/deploy   -H "Authorization: Bearer $ANTIDEPLOY_KEY"   -F "archive=@-" -F "env=$(cat .env)"
+```
+
+Listing returns key names only, never values:
+
+```bash
+curl https://antideploy.com/api/v1/secrets -H "Authorization: Bearer $ANTIDEPLOY_KEY"
+```

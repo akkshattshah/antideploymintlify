@@ -14,11 +14,11 @@ Upload deploy is the right choice when:
 
 - **You don't have a Git repository** — your project lives only on local disk or was exported from a tool that doesn't produce a repo.
 - **You want a quick test deployment** — you have a build artifact or static export ready and want to verify it in a real environment before wiring up CI/CD.
-- **You're working in an air-gapped or restricted environment** — your machine can't authenticate with GitHub or run the CLI, but it can reach the Antideploy dashboard over HTTPS.
+- **You're working in an air-gapped or restricted environment** — your machine can't authenticate with GitHub, but it can reach the Antideploy dashboard over HTTPS.
 - **You're deploying an AI-generated project** — tools like Claude Code, Cursor, or Bolt export a folder of files that you can upload directly.
 
 <Note>
-  Upload deploy does not support automatic re-deployment on file changes. If you want every code change to trigger a new deployment automatically, connect a [GitHub repository](/deploying/github) or use the [CLI](/deploying/cli) instead.
+  Upload deploy does not support automatic re-deployment on file changes. If you want every code change to trigger a new deployment automatically, connect a [GitHub repository](/deploying/github) or push over the [API](/api/deploy) instead.
 </Note>
 
 ---
@@ -89,7 +89,7 @@ To deploy a new version of your app, open the project in the dashboard and click
 | Rollback to previous deployments | ✅ | ✅ |
 
 <Tip>
-  Start with an upload deploy to get your app live quickly, then connect a GitHub repository later to unlock auto-deploys and preview environments — without any downtime or data loss.
+  Start with an upload deploy to get your app live quickly, then connect a GitHub repository later so every push redeploys automatically.
 </Tip>
 
 ---
@@ -100,8 +100,8 @@ To deploy a new version of your app, open the project in the dashboard and click
 - **Supported archive formats**: `.zip` only (not `.tar`, `.tar.gz`, or `.rar`)
 - **Maximum file count**: 50,000 files per upload
 
-If your project exceeds these limits, use the [Antideploy CLI](/deploying/cli) which streams files directly and has no size cap.
+If your project exceeds these limits, push over the [API](/api/deploy), which sends the project as a single archive.
 
 <Warning>
-  Do not include secrets or credentials in your uploaded files. Use [environment variables](/deploying/environments) to pass sensitive configuration to your app at runtime.
+  Do not include secrets or credentials in your uploaded files. Use [environment variables](/configuration/environment-variables) to pass sensitive configuration to your app at runtime.
 </Warning>

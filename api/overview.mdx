@@ -1,182 +1,108 @@
 ---
-title: "Antideploy REST API — Overview and Reference Guide"
-sidebarTitle: "Overview"
-description: "Explore the Antideploy REST API: base URL, versioning, authentication, rate limits, request and response format, pagination, and error handling."
+title: "Antideploy REST API — Overview"
+description: "Base URL, authentication, the four endpoints, rate limits, and error format for the Antideploy API."
 ---
 
-The Antideploy REST API gives you programmatic access to every part of the platform — create and manage applications, trigger deployments, inspect infrastructure, and stream logs, all over HTTP. Every feature available in the dashboard is available through the API.
+The Antideploy API deploys a project and reports on it. It is deliberately
+small — four endpoints — because that is all deploying takes.
 
-All requests go to the base URL:
+## Base URL
 
-```text
-https://api.antideploy.io/v1
+```
+https://antideploy.com/api/v1
 ```
 
-Before making your first request, read the [Authentication](/api/authentication) page to learn how to obtain and use an API key.
-
----
-
-## Versioning
-
-The current API version is **v1**, reflected in the base URL path. When Antideploy introduces breaking changes, a new version prefix (`/v2`, etc.) is released. The previous version remains available for a deprecation window announced in the changelog. Non-breaking additions — new fields, new optional parameters, new endpoints — are added to the current version without a version bump.
-
-<Note>
-  Pin your integrations to `/v1` explicitly. Antideploy will not redirect unversioned requests.
-</Note>
-
----
-
-## Rate limits
-
-Each API key is allowed **1,000 requests per minute**. Limits are tracked on a rolling 60-second window per key. If you exceed the limit, the API returns `429 Too Many Requests`.
-
-The following headers are included on every response so you can track your usage:
-
-| Header | Description |
-|---|---|
-| `X-RateLimit-Limit` | Maximum requests allowed per minute |
-| `X-RateLimit-Remaining` | Requests remaining in the current window |
-| `X-RateLimit-Reset` | Unix timestamp when the window resets |
-
 <Tip>
-  If you hit rate limits frequently, consider batching operations or caching responses where possible. Organization API keys share a single limit across all callers using that key.
+That URL is also a live, unauthenticated description of the API. `curl` it and
+you get the full contract as JSON: request shapes, error codes, and current
+limits. If you are pointing an AI agent at Antideploy, give it this URL along
+with the project key.
 </Tip>
 
----
+## Authentication
+
+Every request carries a project API key as a bearer token:
+
+```bash
+curl https://antideploy.com/api/v1/deployments/$TASK_ID \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY"
+```
+
+Keys are **scoped to a single application**. The key identifies which app you
+are acting on, so no application id is ever sent.
+
+<Card title="Authentication" icon="key" href="/api/authentication">
+  Creating, rotating, and revoking keys.
+</Card>
+
+## Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1` | The API contract. No key required. |
+| `POST` | `/api/v1/deploy` | Push a project and deploy it. |
+| `GET` | `/api/v1/deployments/{taskId}` | Status, steps, spec, warnings, hazards. |
+| `PUT` | `/api/v1/secrets` | Write environment variables. |
+| `GET` | `/api/v1/secrets` | List variable names. Never values. |
+
+That is the complete surface. There are no endpoints for creating,
+listing or deleting applications — projects are created in the dashboard,
+which is also where keys are issued.
+
+<Card title="Deploy over the API" icon="rocket" href="/api/deploy">
+  The full deploy reference, with the one command that ships a directory.
+</Card>
 
 ## Request format
 
-All request bodies must be JSON. Set the `Content-Type` header on every request that includes a body:
+`POST /api/v1/deploy` is **`multipart/form-data`** — it carries your source
+tree. Everything else is JSON.
 
-```bash
-Content-Type: application/json
-```
+## Rate limits
 
-Query parameters are plain URL-encoded strings. Boolean values in query strings are `true` or `false`.
+| Limit | Value |
+| --- | --- |
+| Deploys per hour, per application | 20 |
+| Concurrent deploys per application | 1 |
 
----
+A second deploy while one is running returns `409` with the in-flight
+`taskId`, not an error you need to retry blindly. Exceeding the hourly limit
+returns `429` with `retryAfterSeconds`.
 
-## Response format
+<Note>
+Both limits exist because agents retry. A human clicks Deploy a few times a
+day; a loop that treats failure as retryable will hit the API as fast as it is
+accepted.
+</Note>
 
-Every response — success or error — is a JSON object with a consistent envelope:
+## Errors
 
-```json
-{
-  "data": { ... },
-  "error": null
-}
-```
-
-On success, `data` contains the response payload and `error` is `null`. On failure, `data` is `null` and `error` contains a structured error object (see [Error responses](#error-responses) below).
-
----
-
-## HTTP status codes
-
-| Code | Meaning |
-|---|---|
-| `200 OK` | Request succeeded. Response body contains the result. |
-| `201 Created` | Resource was created successfully. |
-| `400 Bad Request` | The request body or parameters are invalid. |
-| `401 Unauthorized` | Missing or invalid API key. |
-| `403 Forbidden` | Valid API key, but insufficient permissions. |
-| `404 Not Found` | The requested resource does not exist. |
-| `429 Too Many Requests` | Rate limit exceeded. |
-| `500 Server Error` | An unexpected error occurred on Antideploy's end. |
-
----
-
-## Pagination
-
-List endpoints return paginated results using **cursor-based pagination**. Cursors are opaque strings — do not attempt to decode or construct them manually.
-
-**Query parameters:**
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `limit` | integer | `20` | Number of items to return. Maximum is `100`. |
-| `cursor` | string | — | Cursor from a previous response's `next_cursor` to fetch the next page. |
-
-**Response envelope for list endpoints:**
+Errors return a JSON body with a stable `code`, a human-readable `error`, and
+a `documentation` URL pointing back at the contract.
 
 ```json
 {
-  "data": {
-    "items": [ ... ],
-    "next_cursor": "cur_abc123",
-    "has_more": true
-  },
-  "error": null
+  "error": "Received 1 file but 2 paths. Send one `paths` field per `files` field, in the same order, or send an `archive` instead.",
+  "code": "paths_mismatch",
+  "documentation": "https://antideploy.com/api/v1"
 }
 ```
 
-When `has_more` is `false`, you have reached the last page. Pass `next_cursor` as the `cursor` query parameter to fetch the next page.
+| Status | Codes |
+| --- | --- |
+| 400 | `empty`, `bad_request`, `bad_archive`, `paths_mismatch`, `too_large` |
+| 401 | `unauthorized` |
+| 409 | `deploy_in_progress` |
+| 429 | `rate_limited` |
 
----
+Match on `code`, not on the message text.
 
-## Error responses
+## Asynchronous by design
 
-When a request fails, the response body contains a structured error object:
+`POST /api/v1/deploy` returns `202` immediately with a `taskId`. Building and
+releasing take a minute or two. Poll `/api/v1/deployments/{taskId}` until
+`status` is `succeeded` or `failed`.
 
-```json
-{
-  "error": {
-    "code": "app_not_found",
-    "message": "No application found with ID app_xyz",
-    "status": 404
-  }
-}
-```
-
-| Field | Type | Description |
-|---|---|---|
-| `code` | string | Machine-readable error code you can match on in your code. |
-| `message` | string | Human-readable description of the error. |
-| `status` | integer | The HTTP status code, mirrored in the body for convenience. |
-
-<Warning>
-  Never display raw `message` strings directly to end users — they may contain internal resource identifiers. Map `code` values to your own user-facing messages.
-</Warning>
-
----
-
-## API resources
-
-<CardGroup cols={2}>
-  <Card title="Authentication" icon="key" href="/api/authentication">
-    Get an API key, understand key types and scopes, and authenticate every request.
-  </Card>
-  <Card title="Apps" icon="window" href="/api/apps">
-    Create, list, update, and delete applications. Check app health status.
-  </Card>
-  <Card title="Deployments" icon="rocket" href="/api/deployments">
-    Trigger deployments, inspect their status, and roll back to a previous version.
-  </Card>
-  <Card title="Infrastructure" icon="server" href="/api/infrastructure">
-    Inspect provisioned compute, databases, and storage. Scale instances, retrieve performance metrics, and run AI diagnostics.
-  </Card>
-  <Card title="Logs" icon="scroll" href="/api/logs">
-    Query historical logs and stream live logs in real time over SSE.
-  </Card>
-</CardGroup>
-
-## Complete endpoint index
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/apps` | List all apps |
-| `POST` | `/apps` | Create an app |
-| `GET` | `/apps/{app_id}` | Get app details |
-| `PATCH` | `/apps/{app_id}` | Update app settings |
-| `DELETE` | `/apps/{app_id}` | Delete an app |
-| `GET` | `/apps/{app_id}/health` | Get app health status |
-| `GET` | `/apps/{app_id}/deployments` | List deployments |
-| `POST` | `/apps/{app_id}/deployments` | Trigger a deployment |
-| `GET` | `/apps/{app_id}/deployments/{dep_id}` | Get a deployment |
-| `POST` | `/apps/{app_id}/rollback` | Roll back to a previous deployment |
-| `GET` | `/apps/{app_id}/logs` | Query historical logs |
-| `GET` | `/apps/{app_id}/logs/stream` | Stream live logs over SSE |
-| `GET` | `/apps/{app_id}/metrics` | Get performance metrics |
-| `POST` | `/apps/{app_id}/scale` | Adjust compute resources |
-| `GET` | `/apps/{app_id}/infrastructure` | Inspect provisioned resources |
-| `POST` | `/apps/{app_id}/diagnose` | Trigger AI diagnostics |
+The poll response carries `warnings` and `hazards` as structured data. A
+deploy can succeed and still not behave as its author expects — those fields
+are how you find out.

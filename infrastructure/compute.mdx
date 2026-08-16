@@ -1,125 +1,72 @@
 ---
-title: "Managed Compute: Containers, Scaling, and Regions"
-sidebarTitle: "Compute"
-description: "Antideploy runs your app in auto-scaled containers with zero configuration — CPU, memory, and regions are detected and managed automatically."
+title: "Managed Compute: Containers and Scale-to-Zero"
+description: "How Antideploy runs your app — container sizing, cold starts, and the single-instance limit."
 ---
 
-Every app on Antideploy runs in an isolated container that Antideploy builds, deploys, and scales for you. You don't write Dockerfiles, configure Kubernetes, or manage servers. The platform derives everything it needs from your codebase and keeps your app running reliably.
+Every app runs as a container. You do not choose a machine type, write a
+Dockerfile, or configure a runtime.
 
-## How compute works
+## Container resources
 
-Antideploy packages your app into a container image at deploy time and runs it on managed infrastructure. Each deployment gets:
+Each app runs with:
 
-- A dedicated container runtime with resource limits
-- Automatic restarts on crash or failed health checks
-- An internal load balancer routing traffic across instances
-- Isolated networking so your container can't reach other customers' workloads
+| | |
+| --- | --- |
+| CPU | 1 vCPU |
+| Memory | 1 GiB |
+| Request timeout | 300 seconds |
 
-## Automatic resource detection
+These are fixed today and not configurable from the dashboard.
 
-When you deploy, Antideploy analyzes your code to estimate CPU and memory requirements. A Node.js API server gets a sensible default; a Python ML workload that imports large model libraries gets a larger allocation automatically. You can always override these defaults.
+## Scale to zero
+
+An app with no traffic is scaled down to **zero instances**. It costs nothing
+while idle.
 
 <Note>
-Resource detection is a starting point, not a hard ceiling. If your app consistently uses more CPU or memory than its initial allocation, Antideploy surfaces a recommendation in the dashboard to upgrade the compute size.
+The trade-off is cold starts. The first request after an idle period has to
+start a container before it can be served, which typically adds a second or
+two. Subsequent requests hit the warm instance.
 </Note>
 
-## Auto-scaling
-
-Antideploy scales your compute instances up and down based on real-time traffic and CPU load.
-
-- **Scale to zero**: When no traffic hits your app, instances wind down to zero, eliminating idle costs.
-- **Scale on demand**: When traffic arrives, a new instance starts within seconds and joins the load balancer rotation.
-- **Horizontal scaling**: Multiple instances run in parallel during peak load. Antideploy balances requests across all healthy instances.
-
-You can configure minimum and maximum instance counts from the dashboard under **Infrastructure → Compute → Scaling**, or via the CLI.
+## Single instance
 
 <Warning>
-Scale-to-zero introduces a cold-start delay of a few seconds on the first request after a period of inactivity. If your app requires consistently low latency, set a minimum instance count of at least `1`.
+Each app runs on **at most one instance**. There is no horizontal scaling, no
+configurable instance count, and no load balancing across replicas.
+
+This has consequences worth knowing:
+
+- Concurrent requests are handled by one container. A CPU-bound app under load
+  will queue.
+- In-memory state is not shared across instances, because there is only one —
+  which makes in-memory caching and sessions work, but they are lost on every
+  restart and redeploy.
+- Canary and percentage-based rollouts are not possible, since they require
+  two versions serving at once.
 </Warning>
 
-## Compute sizes
+If your app needs to serve real concurrent traffic, this is the limit to plan
+around.
 
-Choose a compute size that matches your workload. Sizes can be changed at any time without downtime — Antideploy performs a rolling restart.
+## Region
 
-| Size | CPU | Memory |
-|---|---|---|
-| **Nano** | 0.25 vCPU | 256 MB |
-| **Micro** | 0.5 vCPU | 512 MB |
-| **Small** | 1 vCPU | 512 MB |
-| **Medium** | 1 vCPU | 1024 MB |
-| **Large** | 2 vCPU | 2048 MB |
-| **XL** | 4 vCPU | 4096 MB |
-| **2XL** | 8 vCPU | 8192 MB |
+Apps run in a single region, chosen to sit close to the database. Region
+selection is not exposed.
 
-### Changing compute size from the dashboard
+## Builds
 
-1. Open your app and navigate to **Infrastructure → Compute**.
-2. Click **Edit** next to your current compute size.
-3. Select a new size from the dropdown.
-4. Click **Apply**. The change takes effect on the next rolling restart.
+Your container is built from source on every deploy.
 
-### Changing compute size via CLI
+- **Buildpacks** detect your runtime and produce an image with no Dockerfile
+  required.
+- **Your own Dockerfile**, if the repository has one, is used instead.
+- **Static sites** skip the buildpack lifecycle entirely and are layered onto
+  a minimal server image — roughly seventy seconds instead of three minutes.
 
-```bash
-antideploy scale --app my-app --cpu 2 --memory 1024
-```
+Build logs are captured and shown in the dashboard, including when a build
+fails.
 
-You can also scale memory alone or CPU alone:
-
-```bash
-antideploy scale --app my-app --memory 2048
-antideploy scale --app my-app --cpu 4
-```
-
-## Regions
-
-Antideploy automatically deploys your app to the region closest to the majority of your users, based on where initial traffic originates. You can override this or deploy to multiple regions.
-
-Available regions:
-
-- `us-east` — US East (Virginia)
-- `us-west` — US West (Oregon)
-- `eu-west` — Europe (Ireland)
-- `eu-central` — Europe (Frankfurt)
-- `ap-southeast` — Asia Pacific (Singapore)
-- `ap-northeast` — Asia Pacific (Tokyo)
-
-To change or add regions, go to **Infrastructure → Compute → Regions** in the dashboard, or specify a region at deploy time:
-
-```bash
-antideploy deploy --app my-app --region eu-west
-```
-
-<Tip>
-Deploying to multiple regions requires your app to be stateless or to use Antideploy-managed storage and databases, which are globally accessible. If your app writes to local disk, it will not share state across regions.
-</Tip>
-
-## Health checks and restart policies
-
-Antideploy performs HTTP health checks on your app every 30 seconds at the `/health` path by default. If the check fails three times in a row, the instance is restarted automatically.
-
-To use a custom health check path, update it under **Infrastructure → Compute → Health Check**:
-
-```bash
-antideploy config --app my-app --health-check-path /api/health
-```
-
-Your health check endpoint should return a `200 OK` response with no body, or a simple JSON payload:
-
-```json
-{ "status": "ok" }
-```
-
-The restart policy is set to **always restart on failure** by default. You can change this to **restart up to N times** or **never restart** for batch workloads that are expected to exit.
-
-## Viewing compute metrics
-
-Open **Infrastructure → Compute → Metrics** to see live and historical graphs for:
-
-- **CPU utilization** — percentage of allocated vCPU used
-- **Memory usage** — bytes used vs. total allocated
-- **Request rate** — requests per second across all instances
-- **Instance count** — how many instances are currently running
-- **Response latency** — p50, p95, and p99 latency in milliseconds
-
-Metrics are retained for 30 days. For longer retention or custom dashboards, connect your app to an external observability provider under **Settings → Integrations**.
+<Card title="Deployments and rollback" icon="clock-rotate-left" href="/operations/deployments">
+  Release history, and rolling back to a previous image.
+</Card>
