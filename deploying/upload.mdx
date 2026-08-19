@@ -1,107 +1,97 @@
 ---
-title: "Deploy Your App by Uploading a ZIP or Folder Directly"
+title: "Deploy by Uploading a Folder"
 sidebarTitle: "Upload"
-description: "Deploy any app instantly by dragging and dropping a folder or ZIP archive — no Git repo or CLI required, straight from the dashboard."
+description: "Pick a folder in the dashboard and deploy it — no Git repository, no CLI, nothing to install."
 ---
 
-Upload deploy lets you ship an application directly from your local machine without connecting a version control system or installing any tools. Drop a folder or ZIP archive onto the Antideploy dashboard and the platform takes over: it analyzes your code, detects the framework, runs the build, and puts your app live within minutes. This is the quickest path from files on disk to a running URL.
+Upload deploy ships an application straight from your machine. You choose a
+folder in the dashboard, Antideploy reads it, works out what it is, builds it,
+and puts it live.
 
----
+## When to use it
 
-## When to use folder or ZIP upload
-
-Upload deploy is the right choice when:
-
-- **You don't have a Git repository** — your project lives only on local disk or was exported from a tool that doesn't produce a repo.
-- **You want a quick test deployment** — you have a build artifact or static export ready and want to verify it in a real environment before wiring up CI/CD.
-- **You're working in an air-gapped or restricted environment** — your machine can't authenticate with GitHub, but it can reach the Antideploy dashboard over HTTPS.
-- **You're deploying an AI-generated project** — tools like Claude Code, Cursor, or Bolt export a folder of files that you can upload directly.
+* **No Git repository** — the project lives only on disk, or came out of a tool
+  that never made one.
+* **A quick test** — you want to see it running somewhere real before wiring up
+  anything permanent.
+* **An AI-generated project** — Claude Code, Cursor, Bolt and the like leave you
+  a folder, and a folder is exactly what this takes.
 
 <Note>
-  Upload deploy does not support automatic re-deployment on file changes. If you want every code change to trigger a new deployment automatically, connect a [GitHub repository](/deploying/github) or push over the [API](/api/deploy) instead.
+  Uploading does not watch for changes. To update the app, upload again — or
+  connect [GitHub](/deploying/github) so every push redeploys, or push over the
+  [API](/api/deploy).
 </Note>
-
----
 
 ## Upload your app
 
 <Steps>
-  <Step title="Open the New Deployment panel">
-    In the Antideploy dashboard, navigate to your project and click **Deploy → New Deployment**. Select **Upload** as the deployment source.
+  <Step title="Start a new application">
+    Click **New application** in the dashboard and choose the upload option.
   </Step>
 
-  <Step title="Upload your folder or ZIP">
-    Drag your project folder or a `.zip` archive onto the upload area, or click **Choose files** to open the file picker.
+  <Step title="Pick the folder">
+    Your browser opens a folder picker. Select the **project root** — the
+    directory holding `package.json`, `requirements.txt`, or `index.html`.
 
-    - **Folder upload**: Select your entire project folder. Antideploy preserves the directory structure exactly.
-    - **ZIP upload**: The archive is unpacked automatically. Make sure your project files sit at the root of the ZIP, not nested inside a subfolder.
-
-    <Tip>
-      Exclude `node_modules`, `.git`, and build caches before uploading to keep the upload small and fast. Antideploy runs `npm install` for you during the build step.
-    </Tip>
+    Dependency and build directories are filtered out as it reads, so there is
+    nothing to clean up first.
   </Step>
 
-  <Step title="Confirm detected settings">
-    After the upload completes, Antideploy analyzes your files and displays the detected framework, build command, and output directory. Review these settings and adjust them if needed, then click **Confirm**.
+  <Step title="Review what was detected">
+    Antideploy shows the runtime, framework, install and start commands, the
+    port, and any database it found — each with the evidence behind it.
+
+    Read the warnings and hazards here. This is the moment to catch a project
+    that will build fine and then not do what you meant.
   </Step>
 
-  <Step title="Watch the build and deploy">
-    Antideploy builds your application and streams the build log in real time. When the build succeeds, your app is live at the URL shown in the deployment summary. Click the URL to open your deployed app.
+  <Step title="Deploy">
+    Click deploy and watch the steps. When it finishes you get an HTTPS URL.
   </Step>
 </Steps>
 
----
+<Warning>
+  Upload the whole project, not just the file you think matters. A folder
+  containing only `index.html` uploads, deploys, and then serves a page whose
+  scripts, styles and images all 404.
+</Warning>
 
-## What happens after upload
+## What is excluded automatically
 
-Once your files land in Antideploy, the platform runs the same pipeline used for GitHub-connected projects:
+`node_modules` · `.git` · `.next` · `dist` · `build`
 
-1. **Analysis** — Antideploy scans your file tree to identify the framework, runtime, and entry point.
-2. **Dependency installation** — Package managers are invoked automatically based on the lockfile present (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, etc.).
-3. **Build** — The detected (or configured) build command runs in an isolated environment.
-4. **Infrastructure provisioning** — Antideploy allocates compute, storage, and networking resources matched to your app's requirements.
-5. **Traffic routing** — Your app goes live and the deployment URL becomes active.
+These are dependencies and build output. Antideploy installs and builds on its
+side, so sending them wastes your upload budget and changes nothing.
 
-The entire process typically completes in under two minutes for most applications.
+## Limits
 
----
-
-## Update an app by re-uploading
-
-To deploy a new version of your app, open the project in the dashboard and click **Deploy → New Deployment → Upload** again. Upload the updated folder or ZIP and Antideploy builds and deploys it as a new deployment.
+| | |
+| --- | --- |
+| Total size | 28 MB, after exclusions |
+| File count | 4,000 files |
+| Per-file size | 5 MB — larger files are skipped |
+| Format | A folder. ZIP and other archives are not accepted here |
 
 <Note>
-  Re-uploading creates a new deployment — it does not overwrite the previous one. Your previous deployments remain available in the **Deployments** tab and can be reactivated instantly with a single click if you need to roll back.
+  These are the limits for browser upload. If your project is bigger, connect
+  [GitHub](/deploying/github), or push a tar over the [API](/api/deploy), which
+  takes the project as a single archive.
 </Note>
 
----
+## Compared to GitHub deploy
 
-## Limitations compared to GitHub deploy
+| Feature                           | Upload | GitHub |
+| --------------------------------- | ------ | ------ |
+| Works without a Git repository    | ✅      | ❌      |
+| Redeploys automatically on push   | ❌      | ✅      |
+| Deploy from the dashboard         | ✅      | ✅      |
+| Roll back to a previous release   | ✅      | ✅      |
+| Records the commit that built     | ❌      | ✅      |
 
-| Feature | Upload deploy | GitHub deploy |
-|---|---|---|
-| Auto-deploy on push | ❌ | ✅ |
-| Pull request previews | ❌ | ✅ |
-| Branch-to-environment mapping | ❌ | ✅ |
-| Deploy from dashboard | ✅ | ✅ |
-| Works without a Git repo | ✅ | ❌ |
-| Works in air-gapped environments | ✅ | ❌ |
-| Rollback to previous deployments | ✅ | ✅ |
+Preview environments, per-branch deploys and pull-request builds do not exist on
+either path — see [what is not provisioned](/infrastructure/overview).
 
-<Tip>
-  Start with an upload deploy to get your app live quickly, then connect a GitHub repository later so every push redeploys automatically.
-</Tip>
-
----
-
-## File size and format limits
-
-- **Maximum upload size**: 500 MB per upload (ZIP or folder)
-- **Supported archive formats**: `.zip` only (not `.tar`, `.tar.gz`, or `.rar`)
-- **Maximum file count**: 50,000 files per upload
-
-If your project exceeds these limits, push over the [API](/api/deploy), which sends the project as a single archive.
-
-<Warning>
-  Do not include secrets or credentials in your uploaded files. Use [environment variables](/configuration/environment-variables) to pass sensitive configuration to your app at runtime.
-</Warning>
+<Card title="Environment variables" icon="key" href="/configuration/environment-variables">
+  Supplying the values your app expects before the first deploy.
+</Card>

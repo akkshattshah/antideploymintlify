@@ -1,108 +1,59 @@
 ---
-title: "App Monitoring: Metrics, Health Checks, and Alerts"
+title: "Health Checks and Downtime Email"
 sidebarTitle: "Monitoring"
-description: "Track request rate, latency, error rate, CPU, and memory with built-in dashboards, automated health checks, and configurable alerting."
+description: "Antideploy checks every deployed app every few minutes and emails you when one goes down or recovers."
 ---
 
-Antideploy monitors your application from the moment you deploy. Every app gets a live metrics dashboard, automatic health checks, and a fully configurable alert system — no third-party setup required.
+Antideploy watches whether your app is up. It does not collect metrics, and
+there is no metrics dashboard — knowing that is more useful than discovering it
+during an incident.
 
-## What Antideploy monitors automatically
+## What is checked
 
-As soon as your app goes live, Antideploy begins collecting the following signals without any code changes:
+Every few minutes, Antideploy sweeps every application that has a live
+deployment and records one of four states.
 
-<CardGroup cols={2}>
-  <Card title="Request Rate" icon="chart-line">
-    Requests per second, broken down by endpoint and HTTP method.
-  </Card>
-  <Card title="Latency" icon="clock">
-    P50, P95, and P99 response times across all requests.
-  </Card>
-  <Card title="Error Rate" icon="triangle-exclamation">
-    Percentage of 4xx and 5xx responses over rolling time windows.
-  </Card>
-  <Card title="CPU Usage" icon="microchip">
-    Per-instance CPU utilization, averaged and per-peak.
-  </Card>
-  <Card title="Memory" icon="server">
-    Heap and resident memory usage over time, with OOM detection.
-  </Card>
-  <Card title="Database Connections" icon="database">
-    Active, idle, and waiting connections to attached databases.
-  </Card>
-</CardGroup>
+| State        | What it means                                                            |
+| ------------ | ------------------------------------------------------------------------ |
+| **Healthy**  | The service is ready and not returning an unusual number of errors.      |
+| **Degraded** | The service is running, but three or more requests returned a 5xx in the last fifteen minutes. |
+| **Down**     | The service is not ready — it failed to start, or the revision is broken. |
+| **Unknown**  | We could not reach the platform to ask.                                  |
 
-All metrics are retained for 30 days by default and are queryable across any time range within that window.
-
-## The Metrics dashboard
-
-Open the **Metrics** tab inside any app in the Antideploy control center to see a real-time view of all collected signals. The dashboard lets you:
-
-- Select a custom time range (last 15 minutes to 30 days)
-- Compare metrics across deployments to spot regressions
-- Overlay deployment events on the timeline to correlate changes with metric shifts
-
-<Tip>
-  Pin your most important charts to the top of the dashboard using the **⭐ Pin** button on any chart tile. Pinned charts load first every time you open Metrics.
-</Tip>
-
-## Health checks
-
-Antideploy continuously pings your application to confirm it is accepting traffic and responding correctly. By default, it sends an HTTP `GET` request to `/` every 30 seconds and expects a `2xx` response within 5 seconds.
-
-### Failure behavior
-
-<Steps>
-  <Step title="First failure detected">
-    Antideploy marks the instance as unhealthy and stops routing new traffic to it while continuing to probe.
-  </Step>
-  <Step title="Three consecutive failures">
-    The unhealthy instance is automatically restarted. Traffic continues flowing to healthy instances during the restart.
-  </Step>
-  <Step title="Instance comes back">
-    A single failed check is treated as noise; repeated failures mark the app as down.
-  </Step>
-</Steps>
-
-<Warning>
-  If **all** instances fail their health checks simultaneously, Antideploy keeps the last known-good instance running and triggers a critical alert rather than taking your app fully offline.
-</Warning>
-
-### Setting up a custom health check endpoint
-
-A dedicated health endpoint gives you more control than the default `/` check — you can verify database connectivity, cache availability, or any other dependency.
-
-```javascript
-// Express example
-app.get('/health', async (req, res) => {
-  try {
-    await db.query('SELECT 1');
-    res.status(200).json({ status: 'ok', db: 'connected' });
-  } catch (err) {
-    res.status(503).json({ status: 'error', db: 'unavailable' });
-  }
-});
-```
-
-Then configure the path in your `antideploy.yaml`:
-
+The state appears on your application in the dashboard. Without this check the
+dashboard would report whatever was true at deploy time — an app that died an
+hour ago would still show a green badge, which is worse than showing nothing.
 
 <Note>
-  Your health check endpoint should return within the configured timeout. Slow health checks count as failures.
+  A single bad reading is not an outage. An app must fail two consecutive checks
+  before it is reported as down, so a momentary blip in the underlying platform
+  does not page you.
 </Note>
 
-## Alerts
+## Email notifications
 
-Antideploy lets you define threshold-based alerts on any monitored metric. When a threshold is breached, notifications are sent through your configured channels.
+You are emailed when an application **changes state** — when it goes down, and
+again when it recovers. You are not emailed on every check, and there is no
+digest.
 
-### Configuring alert thresholds
+Deploy failures are emailed separately, with the build log, at the moment the
+deploy fails.
 
-Navigate to **Settings → Alerts** in the control center, or define alerts in `antideploy.yaml`:
+## What is not collected
 
+<Warning>
+  Antideploy does not collect or display request rate, latency, error
+  percentages, CPU, memory, or database connection counts. There is no metrics
+  tab, no charts, and no alert rules to configure.
 
-### Alert severity levels
+  If you need application metrics, instrument your app and send them to a
+  service you control — the credentials go in your environment variables like
+  any other.
+</Warning>
 
-| Severity | Color | Use for |
-|---|---|---|
-| `critical` | 🔴 Red | Downtime, error spikes, complete health failure |
-| `warning` | 🟡 Yellow | Elevated latency, approaching resource limits |
-| `info` | 🔵 Blue | Deployment events, recovery notices |
+The one signal Antideploy does derive from traffic is the 5xx count behind the
+**Degraded** state above, and it is not exposed as a metric you can query.
+
+<Card title="Logs" icon="file-lines" href="/operations/logs">
+  Reading what your application actually printed.
+</Card>

@@ -46,8 +46,15 @@ page is what happens at each stage.
     Your project is built into a container image.
 
     Most projects go through buildpacks, which detect the runtime and produce
-    an image without a Dockerfile. If your repository has its own Dockerfile,
-    that is used instead.
+    an image without a Dockerfile. If there is a Dockerfile at the **root of
+    what is being built**, that is used instead.
+
+    <Note>
+      The root, specifically. A Dockerfile at `services/api/Dockerfile` is not
+      used — the build runs at the root, where that file is not. If yours lives
+      in a subdirectory, either set that directory as the one to build, or move
+      the Dockerfile up.
+    </Note>
 
     Static sites skip the buildpack lifecycle entirely — there is nothing to
     compile, so the files are layered onto a minimal server image. This takes

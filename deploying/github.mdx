@@ -1,77 +1,103 @@
 ---
-title: "Connect GitHub to Antideploy for Automatic Deployments"
+title: "Deploy from GitHub"
 sidebarTitle: "GitHub"
-description: "Connect a GitHub repository to Antideploy and redeploy automatically on every push to your default branch."
+description: "Connect a repository and every push to its default branch redeploys automatically."
 ---
 
-Connecting a GitHub repository is the fastest way to ship continuously with Antideploy. Once linked, every push to your chosen branch triggers a new deployment automatically — no manual steps, no scripts to maintain. Antideploy detects your framework, installs dependencies, builds your app, and routes live traffic, all without configuration in most cases.
+Connecting a repository is the way to ship continuously. Once it is linked,
+every push to the default branch builds and releases without you doing
+anything.
 
-## Prerequisites
+## Before you start
 
-- An Antideploy account with at least one project created
-- A GitHub account with access to the repository you want to deploy
-- The repository must contain a deployable application (Antideploy supports all major frameworks and runtimes)
+* An Antideploy account.
+* A GitHub account with access to the repository.
+* Permission to install a GitHub App on the account or organisation that owns
+  it. On an organisation you usually need to be an owner, or have an owner
+  approve the request.
 
----
-
-## Connect your GitHub repository
+## Connect a repository
 
 <Steps>
-  <Step title="Open your project's Deploy settings">
-    In the Antideploy dashboard, navigate to your project and select **Settings → Deploy**. Under **Deployment source**, click **Connect GitHub**.
+  <Step title="Start a new application">
+    Click **New application** in the dashboard and choose GitHub.
   </Step>
 
   <Step title="Install the Antideploy GitHub App">
-    You'll be redirected to GitHub to install the **Antideploy GitHub App**. Choose whether to grant access to **all repositories** or **select repositories only** (recommended for teams). Click **Install & Authorize** to continue.
-
-    <Note>
-      You need **Owner** or **Admin** permissions on the GitHub organization or personal account to install the App. Ask your org admin if you don't see the option.
-    </Note>
+    You are sent to GitHub to install it. Grant access to **selected
+    repositories** rather than all of them unless you have a reason not to — you
+    can add more later without reinstalling.
   </Step>
 
-  <Step title="Select a repository">
-    After authorizing, return to the Antideploy dashboard. Use the repository search to find and select the repo you want to deploy. You can filter by organization or personal account using the account selector at the top of the list.
+  <Step title="Pick the repository">
+    Back in Antideploy, choose the repository from the list.
   </Step>
 
-  <Step title="Choose your production branch">
-    Select the branch Antideploy should treat as **production** — typically `main` or `master`. Every push to this branch will trigger a production deployment. You can change this at any time in **Settings → Deploy**.
+  <Step title="Review the analysis">
+    Antideploy reads the repository and shows what it found: runtime, framework,
+    install and build commands, start command, port, and any database — each
+    with the evidence behind it.
+
+    Read the warnings and hazards before deploying, not after.
   </Step>
 
-  <Step title="Review build settings and deploy">
-    Antideploy automatically detects your framework and populates the build command and output directory. Confirm the settings (or adjust them — see [Build settings](#build-settings) below), then click **Deploy**. Your first deployment starts immediately.
+  <Step title="Deploy">
+    Click deploy. You get an HTTPS URL when it finishes.
   </Step>
 </Steps>
 
----
-
 ## Auto-deploy on push
 
-After the initial connection, every push to your production branch triggers a deployment automatically. Antideploy clones the latest commit, runs your build, and swaps traffic to the new version once the build succeeds.
+Every push to the repository's **default branch** triggers a deployment.
+Antideploy fetches that commit, builds it, and releases it when the build
+succeeds.
 
-If a build fails, the previous deployment stays live and you receive a notification with the build log. No downtime occurs due to a failed push.
+If a build fails, the previous version keeps serving and you get an email with
+the reason. A failed push never takes your app down.
 
-<Tip>
-  You can temporarily pause auto-deploys from **Settings → Deploy → Auto-deploy** without disconnecting the repository. This is useful during planned freezes or incident response.
-</Tip>
+<Note>
+  The branch is the repository's default branch, as GitHub reports it. It is not
+  selectable, and pushes to other branches are ignored. There are no per-branch
+  or pull-request deployments.
+</Note>
 
----
+## Repositories holding more than one project
 
-## Build settings
+If the repository contains several projects — a frontend and a backend, or a
+folder of services — Antideploy will say so, and list the directories that look
+like projects in their own right.
 
-Antideploy auto-detects the correct build settings for most frameworks. If your project requires custom settings, navigate to **Settings → Build** to configure them manually.
+Pick the one to deploy and it is built as though that directory were the whole
+repository: its manifest, its dependencies, its start command.
 
-| Setting | Description | Default |
-|---|---|---|
-| **Build command** | The command used to compile your app | Detected from framework |
-| **Output directory** | The folder containing the production build | Detected from framework |
-| **Install command** | Package installation command | `npm install` |
-| **Node version** | Node.js version for the build environment | LTS |
+<Warning>
+  One application deploys one directory. To run a frontend and an API, create
+  two applications from the same repository and point each at its own directory.
 
+  If nothing at the repository root is buildable, Antideploy will not offer a
+  Deploy button until you have chosen a directory — the build could only fail.
+</Warning>
 
----
+## Build configuration
 
-## Managing the GitHub App installation
+There is none to fill in. Install, build and start commands are worked out from
+your code and shown to you before you deploy; they are not editable fields.
 
-To update which repositories the Antideploy GitHub App can access, go to **GitHub → Settings → Applications → Antideploy** and click **Configure**. Changes take effect immediately — no redeployment required.
+The one thing you choose is the **directory** to build, described above.
 
-To disconnect a repository, open the project in Antideploy and go to **Settings → Deploy → Disconnect**. This stops future auto-deploys but does not delete existing deployments or infrastructure.
+If the detected commands are wrong for your project, the ways to correct them
+are the ones your ecosystem already has: a `Procfile` with a `web:` line, or a
+Dockerfile at the root of the directory being built.
+
+## Changing repository access
+
+To add or remove repositories later, go to GitHub → **Settings** →
+**Applications** → **Antideploy** → **Configure**. Changes take effect
+immediately.
+
+Removing the app's access to a repository stops future auto-deploys. Anything
+already deployed keeps running until you delete the application.
+
+<Card title="Deployments and rollback" icon="clock-rotate-left" href="/operations/deployments">
+  Release history and restoring a previous version.
+</Card>

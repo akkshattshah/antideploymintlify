@@ -1,136 +1,65 @@
 ---
-title: "Application Logs: Streaming, Search, and Retention"
+title: "Application Logs"
 sidebarTitle: "Logs"
-description: "Stream live logs, search by level or time range, and manage retention — all captured automatically from stdout, stderr, and structured output."
+description: "Read what your running application printed to stdout and stderr, from the Logs tab in the dashboard."
 ---
 
-Antideploy captures every line your application writes to `stdout` and `stderr` the moment it starts running. No log agents, sidecars, or SDK integrations are required — your logs appear in the dashboard immediately after your first deployment.
+Everything your application writes to `stdout` and `stderr` is captured while it
+runs. No agent, sidecar or SDK is involved — it is collected by the platform
+underneath, and the dashboard reads it back.
 
-## How logs are captured
+## Reading them
 
-Antideploy collects log output from two sources:
+Open the **Logs** tab inside your app and click **Show logs**.
 
-- **Standard streams** — anything your app writes to `stdout` or `stderr` is captured verbatim.
-- **Structured logs** — JSON objects written to `stdout` are parsed automatically, making their fields available as searchable metadata (level, request ID, user ID, and so on).
+Logs are behind a click rather than loaded with the page on purpose: reading
+them is a billed query against the logging backend, and most visits to an
+application page are not debugging.
 
-Your app runs on a single instance, so there is one stream with nothing to merge.
+Once loaded, tick **auto-refresh** to re-read every ten seconds. Untick it to
+stop. That is the whole control surface.
 
-## Viewing logs in the dashboard
+## What you see
 
-Open the **Logs** tab inside any app in the Antideploy control center to see a live, scrolling view of your application output.
+* Your application's own output, verbatim, oldest line first.
+* Failed requests — the platform's own record of any request that returned 4xx
+  or 5xx, which catches errors your app never logged itself.
 
-<Steps>
-  <Step title="Enable live tail">
-    Toggle **Follow** to stream new log lines in real time as your app produces them. New lines appear at the bottom of the view automatically.
-  </Step>
-  <Step title="Pause and inspect">
-    Click anywhere in the log list to pause live tail. Scroll up freely to inspect earlier output, then click **Resume** to jump back to the present.
-  </Step>
-</Steps>
-
-## Searching and filtering logs
-
-Use the filter bar above the log list to narrow results:
-
-<CardGroup cols={2}>
-  <Card title="By log level" icon="layer-group">
-    Show only `error`, `warn`, `info`, or `debug` lines using the **Level** dropdown.
-  </Card>
-  <Card title="By time range" icon="calendar">
-    Pick a preset window (last 15 min, 1 h, 24 h, 7 d) or set a custom start and end time.
-  </Card>
-  <Card title="By text" icon="magnifying-glass">
-    Enter any string in the search box. Antideploy highlights matches and hides non-matching lines.
-  </Card>
-  <Card title="By instance" icon="server">
-    Filter to a specific instance ID — useful when debugging a problem on one node in a multi-instance deployment.
-  </Card>
-</CardGroup>
-
-<Tip>
-  Use structured JSON logging (see [below](#structured-json-logging)) to make filters like `level:error AND userId:usr_abc123` possible directly in the dashboard.
-</Tip>
-
-## Log levels
-
-Antideploy recognizes four standard log levels. When your app emits structured JSON, Antideploy reads the `level` field and applies color coding automatically:
-
-| Level | Color | When to use |
-|---|---|---|
-| `error` | 🔴 Red | Unhandled exceptions, failed operations that affect users |
-| `warn` | 🟡 Yellow | Recoverable issues, deprecated usage, unexpected but non-fatal states |
-| `info` | ⚪ White | Normal operational events — requests, jobs started, config loaded |
-| `debug` | 🔵 Blue | Verbose detail useful during development; typically filtered out in production |
+Successful requests are filtered out. Most frameworks print their own access
+line for every request, so including the platform's record too would show
+everything twice.
 
 <Note>
-  `debug` logs are captured but hidden by default in the dashboard filter. Enable them explicitly when troubleshooting.
+  Colour codes are stripped. Frameworks emit ANSI escapes that survive into the
+  log store, and Flask's banner would otherwise arrive as
+  `[33mPress CTRL+C to quit[0m`.
 </Note>
 
+## Scope and retention
 
-## Log retention
-
-<Tabs>
-  <Tab title="Default policy">
-    Antideploy retains all logs for **7 days** on the Starter plan and **30 days** on the Pro and Team plans. Logs older than the retention window are permanently deleted.
-  </Tab>
-  <Tab title="Extended retention">
-    Upgrade your retention window under **Settings → Logs → Retention**. Extended retention options (90 days, 1 year) are available on the Team and Enterprise plans.
-
-    ```yaml
-    # antideploy.yaml
-    logs:
-      retention_days: 90
-    ```
-  </Tab>
-</Tabs>
+| | |
+| --- | --- |
+| Window | The last 24 hours |
+| Lines per read | The most recent 100 |
+| Retention | Handled by the underlying log store; Antideploy does not expose a retention setting |
 
 <Warning>
-  Logs cannot be recovered after the retention window expires. Export or archive important logs before they age out.
+  There is no log search, no level filter, no time-range picker, and no export.
+  You get the most recent lines and your browser's find-in-page.
+
+  If you need to search across a longer history, log in a structured format and
+  ship it to a service you control.
 </Warning>
 
-## Structured JSON logging
+## If logs will not load
 
-Plain-text logs are fine, but structured logs unlock the full power of Antideploy's search and filter tooling. Emit a JSON object per line and Antideploy will parse it automatically.
+Reading runtime logs requires a permission on the underlying cloud project that
+is not granted by default. If it is missing, the Logs tab says so and names the
+role to grant rather than showing an empty panel.
 
-<CodeGroup>
-```javascript Node.js (pino)
-import pino from 'pino';
+Build logs are separate — they are written to Antideploy's own storage and
+appear against the deployment, including when a build fails.
 
-const log = pino(); // writes JSON to stdout by default
-
-log.info({ userId: 'usr_abc123', action: 'login' }, 'User logged in');
-log.error({ err, requestId: req.id }, 'Payment failed');
-```
-
-```python Python (structlog)
-import structlog
-
-log = structlog.get_logger()
-
-log.info("user_logged_in", user_id="usr_abc123", action="login")
-log.error("payment_failed", error=str(e), request_id=request_id)
-```
-
-```go Go (zerolog)
-import "github.com/rs/zerolog/log"
-
-log.Info().
-    Str("userId", "usr_abc123").
-    Str("action", "login").
-    Msg("User logged in")
-```
-</CodeGroup>
-
-The JSON output Antideploy expects:
-
-```json
-{
-  "level": "info",
-  "time": "2025-01-15T10:32:00.000Z",
-  "msg": "User logged in",
-  "userId": "usr_abc123",
-  "requestId": "req_xyz789"
-}
-```
-
-Any top-level field in the JSON object becomes a filterable attribute in the dashboard. Fields like `requestId`, `userId`, or `traceId` let you reconstruct the full sequence of events for a single user or request in seconds.
+<Card title="Deployments" icon="clock-rotate-left" href="/operations/deployments">
+  Release history, build logs, and rolling back.
+</Card>

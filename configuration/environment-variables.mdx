@@ -1,61 +1,93 @@
 ---
-title: "Environment Variables: Managing Your App Configuration"
-sidebarTitle: "Env Variables"
-description: "Set, update, and manage environment variables per app from the dashboard or the API, to configure your app without changing code."
+title: "Environment Variables"
+description: "Set the values your app reads from its environment — from the dashboard or over the API. Every one is encrypted at rest and write-only."
 ---
 
-Environment variables let you configure your application's behavior without touching your codebase. Use them to set database URLs, toggle feature flags, define API endpoints, or pass any non-sensitive configuration your app needs at runtime.
+Your application reads its configuration from the environment. Antideploy
+stores those values, encrypts them, and injects them when the app is released.
 
 <Note>
-  Environment variables are not the right place for sensitive credentials like API keys, tokens, or passwords. Use [Secrets](/configuration/secrets) instead — they are encrypted at rest and never displayed in plain text after saving.
+  There is one store, not two. Every variable you set is encrypted at rest and
+  cannot be read back — so there is no separate, weaker place to put
+  non-sensitive values, and no decision to make about which to use. See
+  [Secrets](/configuration/secrets).
 </Note>
 
 ## Setting variables from the dashboard
 
-Open your app in the control center, navigate to **Configuration → Environment Variables**, and click **Add Variable**. Enter the key and value, then click **Save**. Changes take effect on the next deployment.
+Open your application and scroll to **Environment variables**. Analysis lists
+the variable names your code reads, marking which ones it still needs from you,
+so the common case is filling in a form that is already labelled.
 
-## Variables injected automatically by Antideploy
+Enter values and save. They apply on the **next deployment**.
 
-Antideploy injects a set of variables into every deployment automatically. You do not need to set these yourself:
+## What Antideploy injects for you
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | Connection string for your provisioned database, if one was created |
-| `PORT` | The port your app must listen on |
+These are set automatically. You do not need to supply them, and if your code
+reads them they will be there.
 
-If you set a variable with the same name as an automatically injected one, your value takes precedence.
+| Variable       | Description                                                     |
+| -------------- | --------------------------------------------------------------- |
+| `PORT`         | The port your app must listen on. Bind this, not a fixed number. |
+| `DATABASE_URL` | Connection string for your provisioned Postgres, if one was created. |
+
+When a Postgres database is provisioned, the standard libpq variables are
+derived from the same connection string and injected alongside it, for tools
+and clients that read those instead of a URL:
+
+`PGHOST` · `PGPORT` · `PGUSER` · `PGPASSWORD` · `PGDATABASE` · `PGSSLMODE`
+
+<Tip>
+  If you set a variable with the same name as one Antideploy injects, **your
+  value wins**. Deliberately setting `DATABASE_URL` to an external database is
+  a normal thing to do, and silently overriding it would be baffling.
+</Tip>
 
 ## When changes take effect
 
-| Change type | When it applies |
-|---|---|
-| New variable added | Next deployment |
-| Variable value updated | Next deployment (or immediately if live reload is enabled) |
-| Variable removed | Next deployment |
+Every change — added, updated, or removed — applies on the next deployment. A
+running container's environment is fixed for the life of that revision, so
+there is no way to change a value under a running app.
 
-**Live reload** is available for a subset of variables that Antideploy can inject at runtime without a full redeploy — for example, feature flags and non-connection-string config values. Enable live reload per-variable from the dashboard by toggling **Live Reload** when editing the variable.
+Redeploy after changing a variable, or the app keeps the value it started with.
 
-<Tip>
-  Use a `.env.example` file in your repository to document which variables your app expects. Your team members and future deployments will thank you.
-</Tip>
+## Documenting what your app needs
+
+Commit a `.env.example`. Analysis reads it to work out which variables your app
+expects and shows them in the dashboard as fields to fill in.
+
+<Warning>
+  Analysis reads the **names** of variables your code and examples reference. It
+  never reads values, and a real `.env` is excluded from what gets uploaded.
+</Warning>
 
 ## Setting variables over the API
 
 Variables can be written with a project API key. They are write-only — nothing,
-including a valid key, can read the values back.
+including a valid key, reads the values back.
 
 ```bash
-curl -X PUT https://antideploy.com/api/v1/secrets   -H "Authorization: Bearer $ANTIDEPLOY_KEY"   -H "Content-Type: application/json"   -d '{"DATABASE_URL":"postgres://..."}'
+curl -X PUT https://antideploy.com/api/v1/secrets \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"STRIPE_SECRET_KEY":"sk_live_..."}'
 ```
 
-You can also send a whole `.env` alongside a deploy:
+Send a whole `.env` alongside a deploy:
 
 ```bash
-tar czf - . | curl -X POST https://antideploy.com/api/v1/deploy   -H "Authorization: Bearer $ANTIDEPLOY_KEY"   -F "archive=@-" -F "env=$(cat .env)"
+tar czf - . | curl -X POST https://antideploy.com/api/v1/deploy \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY" \
+  -F "archive=@-" -F "env=$(cat .env)"
 ```
 
 Listing returns key names only, never values:
 
 ```bash
-curl https://antideploy.com/api/v1/secrets -H "Authorization: Bearer $ANTIDEPLOY_KEY"
+curl https://antideploy.com/api/v1/secrets \
+  -H "Authorization: Bearer $ANTIDEPLOY_KEY"
 ```
+
+<Card title="Bring your own database" icon="database" href="/infrastructure/databases">
+  Pointing the app at Supabase, Neon, or anything else you already run.
+</Card>

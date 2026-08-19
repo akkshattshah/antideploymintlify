@@ -1,99 +1,77 @@
 ---
-title: "Deployment History, Rollbacks, and Release Management"
+title: "Deployment History and Rollback"
 sidebarTitle: "Deployments"
-description: "Browse full deployment history, one-click rollback to any previous release, and track every change with commit, duration, and status in Antideploy."
+description: "Every release is recorded, and any previous one that produced an image can be restored without a rebuild."
 ---
 
-Every time you push code, Antideploy records a complete deployment entry — what changed, who triggered it, how long it took, and whether it succeeded. That history gives you the visibility to understand your release cadence and the tools to recover instantly when something goes wrong.
+Every deploy is recorded against the application — what it built, how it ended,
+and the image it produced. That last part is what makes rollback instant.
 
-## Viewing deployment history
+## Deployment history
 
-Open the **Deployments** tab inside any app in the Antideploy control center to see a reverse-chronological list of every release. Each entry shows at a glance what you need to assess a deployment or decide whether to roll back.
+The **Deployments** tab lists releases newest first. Each row carries its
+status, when it ran, and — when the deploy came from GitHub — the commit it
+built.
 
-### Deployment entry fields
+### Statuses
 
-| Field | Description |
-|---|---|
-| **Status** | Current state of the deployment (see below) |
-| **Commit** | Git SHA and message, linked to your repository |
-| **Duration** | Total time from queue to live |
-| **Deploy time** | Timestamp when the deployment went live |
-| **Triggered by** | User, API key, or CI integration that initiated the deploy |
+| Status         | Meaning                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
+| **Queued**     | Accepted and waiting for the worker to pick it up.                      |
+| **Building**   | Source is being packaged and built into a container image.              |
+| **Deploying**  | The image is built; the database, migrations and release are running.   |
+| **Live**       | Serving traffic.                                                        |
+| **Failed**     | It did not finish. The previous version is still serving.               |
 
-### Deployment statuses
+A failed deploy carries its reason, and where the failure happened during the
+build, the build log with it. Where the container built but would not start,
+the failure shows what the container printed on its way out.
 
-<CardGroup cols={3}>
-  <Card title="Queued" icon="clock">
-    The deployment is waiting for a build runner to become available.
-  </Card>
-  <Card title="Building" icon="hammer">
-    Your code is being compiled, dependencies installed, and a container image assembled.
-  </Card>
-  <Card title="Deploying" icon="rocket">
-    The new image is being rolled out to instances and traffic is being shifted.
-  </Card>
-  <Card title="Live" icon="circle-check">
-    The deployment is serving 100% of traffic successfully.
-  </Card>
-  <Card title="Failed" icon="circle-xmark">
-    The build or rollout encountered an error. The previous deployment continues to serve traffic.
-  </Card>
-  <Card title="Rolled Back" icon="rotate-left">
-    This deployment was superseded by a rollback to a different release.
-  </Card>
-</CardGroup>
+## Rolling back
 
-## Rolling back to a previous deployment
-
-If a deployment introduces a bug or regression, you can revert to any prior release in seconds. Antideploy switches traffic to the previous container image — no rebuild required.
-
-### From the dashboard
+Any earlier deployment that produced an image can be restored. Antideploy
+points the service back at that image — there is no rebuild, so it takes about
+as long as a release rather than a full deploy.
 
 <Steps>
   <Step title="Open Deployments">
-    Navigate to the **Deployments** tab of your app.
+    Go to the **Deployments** section of your app.
   </Step>
-  <Step title="Find the target release">
-    Locate the deployment you want to restore. Look for the **Live** badge on the currently active release and the **Rolled Back** badge on any previous reversions.
+  <Step title="Choose the release">
+    Find the deployment you want back. Rows that can be restored show a **Roll
+    back** button; the currently live one does not.
   </Step>
-  <Step title="Initiate the rollback">
-    Click the **⋯** menu on the target deployment row and select **Roll back to this deployment**. Confirm in the dialog.
-  </Step>
-  <Step title="Verify traffic">
-    Watch the status badge on the restored deployment flip to **Live**. The dashboard Metrics will reflect the rollback in real time.
-  </Step>
-</Steps>
-
-
-
-## What happens during rollback
-
-<Steps>
-  <Step title="Traffic cutover">
-    Antideploy immediately routes all new requests to the target deployment's container image. In-flight requests on the current deployment complete normally.
-  </Step>
-  <Step title="Instance replacement">
-    New instances running the rolled-back image are brought up. Old instances are drained and terminated once they finish serving any open connections.
-  </Step>
-  <Step title="Health verification">
-    Antideploy runs health checks against the restored instances before confirming the rollback is complete. If health checks fail, you are alerted immediately.
+  <Step title="Roll back">
+    Click it. The service is re-pointed at that deployment's image and a new
+    entry is recorded.
   </Step>
 </Steps>
 
 <Warning>
-  Rollbacks restore your **application code** only — they do not reverse database migrations. If your deployment included schema changes, verify database compatibility before rolling back, or use an additive migration strategy that supports both the old and new code simultaneously.
+  Rollback restores your **application code only**. It does not reverse database
+  migrations.
+
+  If the release you are rolling back from changed your schema, check that the
+  older code can still run against it. The safest pattern is additive
+  migrations that both versions tolerate.
 </Warning>
 
-## Zero-downtime deployments
+## Zero-downtime releases
 
-The currently running version keeps serving until the new one is built and passes its health check. If the new version fails to start, the old one is left in place and the deployment is marked failed.
+The running version keeps serving until the new one has been built and has
+passed its health check. If the new version fails to start, the old one is left
+in place and the deploy is marked failed — you do not get a window where
+neither is up.
 
-This means your users never hit a deployment window. Configure the rolling update behavior in `antideploy.yaml`:
+<Note>
+  Because each app runs on at most one instance, there is no percentage-based
+  rollout, no canary, and no way to have two versions serving at once. The
+  cutover is a switch, not a gradual shift.
+</Note>
 
-```yaml
-deploy:
-  strategy: rolling
-  min_healthy_percent: 75   # keep at least 75% of instances live during rollout
-  max_surge: 25             # spin up at most 25% extra instances during rollout
-  drain_timeout: 30         # seconds to wait for in-flight requests to complete
-```
+There is no deployment configuration file. Build and start commands come from
+analysis of your code, and the release behaviour above is not configurable.
+
+<Card title="Compute" icon="server" href="/infrastructure/compute">
+  The single-instance limit and what follows from it.
+</Card>
