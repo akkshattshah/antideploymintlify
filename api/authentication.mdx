@@ -117,6 +117,10 @@ Open **API keys** for the project to revoke a project key, or **Account tokens**
 to revoke a terminal login. Either stops working immediately; revocation is
 checked on every request, not cached.
 
+Both are browser actions. Neither credential can revoke anything over the API,
+including itself — otherwise a stolen one could withdraw the legitimate
+credentials and leave only the thief holding a working key.
+
 Revoke rather than delete: the row is kept so `Last used` remains visible,
 which is how you work out whether a leaked credential was actually used.
 

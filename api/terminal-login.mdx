@@ -72,18 +72,35 @@ store. Project keys are the ones built to survive a `git add .`.
     ```
 
     Poll every `interval` seconds. Until someone approves, you get `400` with
-    `code: "authorization_pending"`, which means keep waiting.
+    `error: "authorization_pending"`, which means keep waiting.
 
-    | Code | Meaning |
+    | `error` | Meaning |
     | --- | --- |
     | `authorization_pending` | Nobody has approved yet. Keep polling. |
     | `access_denied` | They refused. Stop. |
     | `expired_token` | The code expired or was already used. Start again. |
+
+    <Warning>
+    Match on **`error`**, not on `error_description`. Per RFC 8628 the machine
+    code is in `error` and the human sentence is in `error_description`. A
+    poller that compares the sentence against `authorization_pending` will
+    never match, fall through to its catch-all, and abandon a login that is
+    still perfectly valid. (`code` carries the same value, for clients written
+    against an earlier shape of this API.)
+    </Warning>
   </Step>
 
   <Step title="Store the token">
     Approval returns `200` with the token. Codes are single use: a second poll
     for the same `deviceCode` returns `expired_token`.
+
+    <Warning>
+    **A poll that succeeds is the redemption.** There is no separate "fetch"
+    step. If you make a poll to see what happens and discard the response, the
+    code is spent and the token is gone — you have to start a new login. Treat
+    every poll as the real thing and write the result somewhere before you look
+    at it.
+    </Warning>
 
     ```bash
     mkdir -p ~/.antideploy && chmod 700 ~/.antideploy
@@ -162,8 +179,18 @@ spend beyond the ceiling your own account has.
 
 ## Revoking
 
-Revoke from the dashboard. It stops working immediately; revocation is checked
-on every request, not cached.
+Open **Account tokens** in the dashboard and revoke it. It stops working
+immediately — revocation is checked on every request, not cached — and the
+terminal that held it logs in again with one approval.
+
+<Note>
+Revoking is a browser action, deliberately. An account token cannot revoke
+anything, including itself: a stolen credential that could kill the legitimate
+ones would leave the thief as the only holder.
+</Note>
+
+If a token has been exposed — printed to a terminal, pasted into a chat, caught
+in a transcript — revoke it and start a new login. That costs one click.
 
 <Card title="Deploy over the API" icon="rocket" href="/api/deploy">
   The full push reference.
