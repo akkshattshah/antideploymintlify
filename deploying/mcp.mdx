@@ -1,0 +1,157 @@
+---
+title: "Deploy from a Coding Agent"
+sidebarTitle: "Coding agent (MCP)"
+description: "Give Claude Code, Cursor, or any MCP client the ability to deploy your project — no browser, no Dockerfile, nothing to configure."
+---
+
+Antideploy ships an [MCP](https://modelcontextprotocol.io) server, so the agent
+that wrote your application can also deploy it. You ask for a change, and it
+edits the code, deploys, watches the build, and hands you back a URL.
+
+It works with Claude Code, Cursor, Windsurf, Codex, and anything else that
+speaks MCP.
+
+## When to use it
+
+* **An agent is doing the work** — you would rather not leave the conversation
+  to ship what it just wrote.
+* **You want the deploy in the loop** — the agent reads the build result and
+  can fix what broke without you relaying it.
+* **Nothing to install** — your agent runs the server with `npx` on demand.
+
+<Note>
+  These are not exclusive. Connect [GitHub](/deploying/github) later and every
+  push redeploys; use [folder upload](/deploying/upload) when you just want to
+  drag a directory into the dashboard once. An app deployed over MCP can be
+  connected to a repository afterwards without losing anything.
+</Note>
+
+## Set it up
+
+<Steps>
+  <Step title="Create an application and an API key">
+    Create the application in the dashboard, then create an API key for it.
+
+    The key identifies the application, so you never pass an application id —
+    one key, one app.
+  </Step>
+
+  <Step title="Add the server to your agent">
+    <CodeGroup>
+    ```bash Claude Code
+    claude mcp add antideploy \
+      -e ANTIDEPLOY_API_KEY=ad_your_key \
+      -- npx -y antideploy-mcp
+    ```
+
+    ```json mcp.json
+    {
+      "mcpServers": {
+        "antideploy": {
+          "command": "npx",
+          "args": ["-y", "antideploy-mcp"],
+          "env": { "ANTIDEPLOY_API_KEY": "ad_your_key" }
+        }
+      }
+    }
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Ask it to deploy">
+    Start a new session so your agent picks up the server, then say **deploy
+    this**. It calls `deploy`, gets a task id back, and polls
+    `deployment_status` until the application is live.
+  </Step>
+</Steps>
+
+## The tools
+
+| Tool | What it does |
+| --- | --- |
+| `deploy` | Packages the project directory and deploys it. Returns a `taskId`. |
+| `deployment_status` | Progress for one deploy: each step, the detected spec, warnings and hazards. |
+| `list_env` | Environment variable names. Values are never returned. |
+| `set_env` | Store or replace environment variables. |
+| `api_info` | The API's own description of itself. |
+
+Deploys are asynchronous. `deploy` returns immediately with a `taskId`, and your
+agent polls `deployment_status` until it reads `succeeded` or `failed`. A small
+static site is usually live in about thirty seconds.
+
+<Note>
+  Warnings and hazards in the `deployment_status` response are structured data,
+  meant to be read out to you. A deploy can succeed and still tell you something
+  worth acting on.
+</Note>
+
+<Warning>
+  The whole directory is sent, not just the entry point. A deploy containing one
+  file builds, starts, and then serves a page whose scripts, styles and images
+  all 404. The MCP server always sends the full tree.
+</Warning>
+
+## What happens to your .env
+
+A `.env` in the project directory **is uploaded**, on purpose. Its values go
+into the encrypted secret store, and the file itself is then dropped from the
+build — so you do not retype nine API keys you already have on disk.
+
+Move the file before deploying if that is not what you want. See
+[secrets](/configuration/secrets) for how values are stored, and
+[environment variables](/configuration/environment-variables) for how they reach
+your application.
+
+## What is excluded automatically
+
+| | |
+| --- | --- |
+| Dependencies | `node_modules`, `vendor`, `.venv`, `venv` |
+| Build output | `dist`, `build`, `out`, `.next`, `.nuxt`, `.svelte-kit`, `target` |
+| Caches | `.turbo`, `.cache`, `.parcel-cache`, `__pycache__`, `.pytest_cache` |
+| Tooling | `.git`, `.idea`, `.vscode`, `.terraform`, `.gradle` |
+| Keys | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa` |
+| Noise | `.DS_Store`, `Thumbs.db`, `desktop.ini` |
+
+## Limits
+
+| | |
+| --- | --- |
+| Files | 4,000 |
+| Per file | 5 MB |
+| Total upload | 28 MB |
+| Concurrent deploys | 1 per application |
+
+These are checked on your machine before anything uploads, so going over one
+costs you an error rather than a transfer.
+
+## Configuration
+
+| Variable | |
+| --- | --- |
+| `ANTIDEPLOY_API_KEY` | Required. The key for the application to deploy. |
+| `ANTIDEPLOY_URL` | Optional. Defaults to `https://antideploy.com`. |
+
+## Compared to the other ways in
+
+| | Coding agent | [GitHub](/deploying/github) | [Upload](/deploying/upload) |
+| --- | --- | --- | --- |
+| Who triggers it | Your agent | A push to the default branch | You, in the dashboard |
+| Needs a repository | No | Yes | No |
+| Redeploys on push | No | Yes | No |
+| Leaves the conversation | No | — | Yes |
+
+<Card title="API reference" icon="terminal" href="/api/overview">
+  The MCP server is a thin client over the HTTP API. Anything it can do, a
+  script can do with `curl`.
+</Card>
+
+## Keeping the key safe
+
+The key is scoped to one application, can write secrets but never read them
+back, and can be revoked on its own without touching anything else you own.
+
+That is deliberate. A key living in an agent's configuration will eventually be
+committed, screenshotted, or pasted into a chat window, and the blast radius
+when it is should be one application. Revoke and replace it in the dashboard at
+any time.
