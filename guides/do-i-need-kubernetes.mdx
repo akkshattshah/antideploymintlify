@@ -1,0 +1,90 @@
+---
+title: "Do I Need Kubernetes?"
+sidebarTitle: "Do I need Kubernetes?"
+description: "For most web applications, no. Here is the honest boundary: what you actually need, when Kubernetes starts earning its cost, and where Antideploy stops."
+---
+
+**For one web application with a database, almost certainly not.**
+
+Kubernetes solves problems that appear at a particular scale and shape. If you
+do not have those problems, it adds a control plane, a manifest format, an
+ingress controller, and an ongoing operational job, in exchange for capabilities
+you are not using.
+
+That is not a criticism of Kubernetes. It is very good at what it is for.
+
+## What you actually need to deploy a web app
+
+For the overwhelming majority of applications, the requirement list is short:
+
+* A container, built from your source.
+* Somewhere to run it, with HTTPS in front.
+* A database, reachable by that container.
+* Environment variables that are not in your repository.
+* Logs, so you can see what happened.
+* A way back to the previous version.
+
+None of that requires an orchestrator. Cloud Run, Fly, Render, Railway and
+Antideploy all provide it without one.
+
+## When Kubernetes starts earning its cost
+
+The honest triggers are structural, not aspirational:
+
+| You have | Why an orchestrator helps |
+| --- | --- |
+| Many services with complex dependencies between them | Service discovery and rollout ordering stop being manual |
+| A platform team | Somebody is paid to operate the thing that operates your apps |
+| Hard multi-region or multi-cloud requirements | The abstraction genuinely pays for itself |
+| Workloads that need custom scheduling | GPUs, spot instances, node affinity |
+| Compliance requiring control over the whole runtime | You need the layers a managed platform hides |
+
+"We might scale later" is not on that list. Neither is "it is what serious
+companies use." A managed platform can carry a large amount of traffic, and
+moving later is a smaller job than running a cluster you do not need yet.
+
+## Where Antideploy stops
+
+Being specific, because a page like this is worthless if it only argues one way.
+
+**Antideploy runs a single instance of your application.** Not a pool behind a
+load balancer, and not an autoscaling group. That has real consequences:
+
+* In-memory caching and sessions work, because there is only one process. They
+  are lost on every deploy and restart.
+* Throughput is bounded by what one instance can serve.
+* There is no rolling deploy across replicas.
+
+<Warning>
+  If you need horizontal scale across instances today, that is a genuine reason
+  to use something else, and it is fair to say so. This is a limit, not a
+  configuration you can raise.
+</Warning>
+
+**Also not provided:** background workers, scheduled jobs, persistent disk, or
+databases other than Postgres. Those are all things an orchestrator would let
+you run and this does not.
+
+## The middle ground most people are in
+
+Between "one container" and "a cluster" sits almost everyone: an application,
+its database, some secrets, and the need to get a fix out quickly when it
+breaks.
+
+The problems in that band are not scheduling problems. They are the ones
+this platform is built around:
+
+* Getting the container built without maintaining a Dockerfile.
+* Getting migrations to run **before** the app starts rather than after it has
+  crashed.
+* Getting back to the version that worked, in seconds, when one does not.
+* Finding out an application went down without discovering it from a customer.
+
+Kubernetes does not solve any of those for you. It gives you the primitives to
+solve them yourself, which is exactly the trade you want when you have a team to
+do it and exactly the wrong trade when you do not.
+
+<Card title="What Antideploy runs your app on" icon="server" href="/infrastructure/compute">
+  Container sizing, cold starts, and the single-instance limit, stated plainly
+  so you can decide whether it fits before you deploy.
+</Card>

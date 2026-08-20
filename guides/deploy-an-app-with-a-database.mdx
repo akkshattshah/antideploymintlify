@@ -1,0 +1,105 @@
+---
+title: "Deploy an App With a Postgres Database"
+sidebarTitle: "With a database"
+description: "Deploy an application and its Postgres database together, with DATABASE_URL injected and migrations run before the app starts rather than after it has crashed."
+---
+
+**Add an ORM or a Postgres driver to your project and deploy it.** The database
+is created, `DATABASE_URL` is injected, and your migrations run before the
+application starts.
+
+You do not create the database, copy a connection string, or decide where the
+migration step goes.
+
+## How the database is detected
+
+Antideploy looks for a Postgres client in your dependencies:
+
+| Runtime | What it looks for |
+| --- | --- |
+| Node | Prisma, Drizzle, TypeORM, Sequelize, Knex, `pg`, `postgres` |
+| Python | SQLAlchemy, Django ORM, `psycopg2`, `asyncpg` |
+| Other | The equivalent Postgres client for your language |
+
+If one is there, your app needs a database and gets one. If not, no database is
+created, and you are not paying for something you never asked for.
+
+## The ordering that matters
+
+Most deployment platforms give you a database and a connection string and leave
+the rest to you. The failure that follows is always the same: the container
+starts, the app queries a table that does not exist yet, and it crashes. Then
+the migration runs, and the next restart works. You get one deploy that looks
+broken for no reason.
+
+Antideploy runs migrations **before** the release, not after:
+
+<Steps>
+  <Step title="The database is provisioned">
+    A Postgres database, with `DATABASE_URL` injected into the environment.
+  </Step>
+  <Step title="Your migrations run against it">
+    Using your project's own migration tool. Prisma, Drizzle, Alembic, Django,
+    and the rest run the way they run locally.
+  </Step>
+  <Step title="Only then does the app start">
+    If the migration fails, the deploy fails and the previous version stays up.
+    You do not get a window where the schema is half applied and the app is
+    serving traffic.
+  </Step>
+</Steps>
+
+<Note>
+  Redeploying reuses the existing database rather than creating a second one.
+  Your data survives every deploy.
+</Note>
+
+## Your connection string
+
+`DATABASE_URL` is set in the environment. Read it the way you already do:
+
+```js Node
+// Prisma, Drizzle, and node-postgres all read this by default.
+const url = process.env.DATABASE_URL;
+```
+
+```python Python
+import os
+url = os.environ["DATABASE_URL"]
+```
+
+Nothing to configure. If your code already reads `DATABASE_URL` locally, it
+works unchanged.
+
+## Confirming a migration landed
+
+The dashboard includes a read-only browser for your database: tables, columns,
+and row counts. You can check that a migration applied without connecting a
+client or opening a tunnel.
+
+## What you should know before relying on it
+
+* **One database per application.** Not per branch, and there are no preview
+  databases.
+* **No automatic point-in-time restore.** If you need a copy of your data, take
+  one with `pg_dump` before deleting an application.
+* **Postgres only.** MySQL, MongoDB and Redis are not provisioned. You can still
+  use them if they already exist somewhere: put the credentials in your
+  environment variables and your app will pick them up.
+
+## If your app crashes on the first request
+
+Almost always one of these:
+
+| Symptom | Cause |
+| --- | --- |
+| `relation "x" does not exist` | Your migration tool was not detected, so nothing ran. Check the detected spec. |
+| Connection refused | Your code is reading a hardcoded localhost URL rather than `DATABASE_URL`. |
+| SSL required | Add `?sslmode=require`, or use a client that negotiates it. |
+
+The deployment status response carries the detected spec, warnings and hazards
+as structured data, so the answer is usually there before you start guessing.
+
+<Card title="Deploy one" icon="database" href="/quickstart">
+  Connect a repository with an ORM in it and watch the database step run.
+</Card>

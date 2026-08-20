@@ -56,6 +56,11 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/deploy-without-a-dockerfile",
+              "guides/deploy-an-app-with-a-database",
+              "guides/why-did-my-deployment-fail",
+              "guides/roll-back-a-bad-deploy",
+              "guides/do-i-need-kubernetes",
               "guides/cloud-run-the-hard-way"
             ]
           }

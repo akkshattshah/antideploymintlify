@@ -1,0 +1,109 @@
+---
+title: "Deploy Without a Dockerfile"
+sidebarTitle: "Without a Dockerfile"
+description: "You do not need to write a Dockerfile to deploy a web application. Here is what replaces it, what you give up, and when you still want one."
+---
+
+**You do not need one.** Antideploy reads your project, works out how to build
+and start it, and produces a container without you writing or maintaining any
+container configuration.
+
+If you already have a Dockerfile at the root of your repository, it is used
+instead. Nothing here takes that away from you.
+
+## What replaces it
+
+Buildpacks. Rather than describing your environment in a file, the build
+inspects your project and assembles an image from what it finds:
+
+* Your **runtime and its version**, from `package.json`, `.nvmrc`,
+  `requirements.txt`, `runtime.txt`, `go.mod`, or the equivalent for your
+  language.
+* Your **dependencies**, installed with whatever lockfile is present.
+* Your **build command**, if there is one to run.
+* Your **start command**, from your scripts or from the convention your
+  framework uses.
+* The **port** your application listens on.
+
+The result is an ordinary OCI container. Nothing about it is proprietary, and
+nothing about your project has to change to produce it.
+
+## What you actually skip
+
+A working Dockerfile for a Node application is short. Keeping one correct is
+not.
+
+| You would otherwise maintain | Buildpacks handle it |
+| --- | --- |
+| A base image, and its security updates | Rebuilt on every deploy |
+| Layer ordering so installs cache properly | Already ordered |
+| Multi-stage builds to keep the image small | Build and run stages separated |
+| A non-root user | Set up already |
+| Matching your local Node version | Read from your project |
+| `.dockerignore` drift | Excluded by the same rules every time |
+
+The Dockerfile you write on day one is usually fine. The one still sitting there
+untouched eighteen months later, on a base image with known CVEs, is the actual
+cost.
+
+## Deploying
+
+<Steps>
+  <Step title="Point Antideploy at your project">
+    [Connect a repository](/deploying/github), [upload a folder](/deploying/upload),
+    or [let your coding agent do it](/deploying/mcp). No configuration file is
+    added to your project by any of these.
+  </Step>
+
+  <Step title="Read what was detected">
+    You get the runtime, framework, build and start commands, port, and any
+    database, each with the file it was inferred from. This is the moment to
+    catch something that would build cleanly and then behave wrongly.
+  </Step>
+
+  <Step title="Deploy">
+    The image is built, released behind HTTPS, and health checked before it is
+    called live.
+  </Step>
+</Steps>
+
+## When you still want a Dockerfile
+
+Buildpacks cover the common shapes well and unusual ones badly. Write one when:
+
+* You need a **system package** that is not part of a standard runtime image,
+  such as a specific `ffmpeg` build, a PDF toolchain, or a native library your
+  dependency compiles against.
+* Your build has **steps that are not dependency installation**, like compiling
+  a binary, generating protobufs, or fetching a model file.
+* You are pinning to a **precise base image** for compliance reasons.
+
+<Note>
+  A Dockerfile at the repository root is detected and used automatically. One
+  nested in a subdirectory is not, because the build runs at the root and will
+  not find it. If yours lives in a subdirectory, set that directory as the one
+  to build.
+</Note>
+
+## Static sites skip all of it
+
+A site with no server does not get a runtime at all. The files are layered onto
+a minimal server image, which takes roughly seventy seconds rather than three
+minutes. There is nothing to compile and nothing to configure.
+
+## What this does not solve
+
+Being honest about the boundary, since a build that succeeds and then misbehaves
+is worse than one that fails:
+
+* **Files written to local disk do not persist.** The filesystem is ephemeral
+  and there is one instance, so uploads written to disk vanish on the next
+  deploy.
+* **Background workers and scheduled jobs** are not started for you.
+* **A build that succeeds is not an application that works.** Read the warnings
+  and hazards, which say which of these apply to your project specifically.
+
+<Card title="Deploy something now" icon="rocket" href="/quickstart">
+  Connect a repository and watch what gets detected. Nothing is added to your
+  project and nothing is committed on your behalf.
+</Card>

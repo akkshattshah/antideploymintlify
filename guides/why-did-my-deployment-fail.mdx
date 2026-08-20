@@ -1,0 +1,116 @@
+---
+title: "Why Did My Deployment Fail?"
+sidebarTitle: "Why a deploy failed"
+description: "The failures that actually happen when you deploy a web app, what each one really means, and why the error you see is often not the thing that is wrong."
+---
+
+Deployment failures cluster. Almost all of them are one of six things, and most
+report something other than the actual cause.
+
+Work through these in order. The first three cover the large majority.
+
+## It works locally but not in production
+
+The single most common report, and it is almost never mysterious.
+
+| What differs | What breaks |
+| --- | --- |
+| Your `.env` is not deployed | Every variable your code reads is undefined |
+| Your `node_modules` is not deployed | A dependency you installed but never saved to `package.json` |
+| Your local database | A connection string pointing at `localhost` |
+| Your Node or Python version | Syntax or API that does not exist in the version that got installed |
+| Your local build artefacts | Something you built once by hand and never scripted |
+
+Local is not a smaller production. It is a machine with years of accumulated
+state that you cannot see and did not write down.
+
+<Note>
+  Antideploy detects every environment variable your code reads and separates
+  what it can supply from what it must ask you for. That list is the fastest way
+  to find the variable you forgot.
+</Note>
+
+## The site loads but every asset 404s
+
+You deployed one file instead of the project.
+
+The page arrives, the build reported success, and the browser console is full of
+404s for scripts, styles and images. This happens when an upload or an API push
+carries only the entry point.
+
+**Check the file count.** If you expected a project and see one file, the upload
+was wrong. Send the whole directory, not the file you think matters.
+
+## The build fails on install
+
+| Error | Cause |
+| --- | --- |
+| A package version that does not exist | Your lockfile and manifest disagree |
+| `EACCES` or permission errors | A postinstall script assuming a writable global path |
+| A native module failing to compile | A system library present locally, absent in the build |
+| Node version errors | Your `engines` field excludes the version being used |
+
+The last one is worth checking first. A pinned engine range that no longer
+matches anything is a five second fix that looks like a toolchain problem.
+
+## The build succeeds and the app never starts
+
+The container was built and then failed to come up. Three causes, in order of
+likelihood:
+
+**It is not listening on the right port.** The platform assigns a port at
+runtime and passes it in the environment. An app hardcoded to `3000` never
+receives traffic and is killed as unhealthy. Read the port from the environment
+with a fallback:
+
+```js
+const port = process.env.PORT || 3000;
+```
+
+**It is bound to localhost.** Listening on `127.0.0.1` means nothing outside the
+container can reach it. Bind to `0.0.0.0`.
+
+**It crashed on startup.** A missing variable, or a database query before the
+schema exists. The runtime logs say which.
+
+## The database exists but the tables do not
+
+`relation "users" does not exist`, on the first request after a clean deploy.
+
+Your migration did not run, or ran after the app started. On Antideploy
+migrations run **before** the release, so a failed migration fails the deploy and
+leaves the previous version serving. If you are seeing this, the likely cause is
+that your migration tool was not detected. Check the detected spec.
+
+## It deployed fine and does not work
+
+The most expensive category, because nothing reported an error.
+
+* **Files written to local disk vanish.** The filesystem is ephemeral. Uploads
+  saved to disk survive until the next deploy and no longer.
+* **In-memory state is not shared and does not survive.** Sessions in memory,
+  in-process caches, and rate limit counters reset on every restart.
+* **Background workers and scheduled jobs do not start** because you deployed a
+  web service.
+* **A webhook cannot reach you** if you never told the sender the new URL.
+
+<Warning>
+  These are the ones worth reading the hazards for. Antideploy reports them as
+  structured data at analysis time, before the deploy, precisely because none of
+  them will announce themselves afterwards.
+</Warning>
+
+## Reading the failure rather than guessing
+
+Every deploy records its steps, the analyzed spec, warnings and hazards, and the
+build log. Warnings are things that will work but probably are not what you
+meant. Hazards are facts about what will not work once live.
+
+Both come back as structured data rather than a red box, which means a
+coding agent can read them and act on them without a human relaying the
+message.
+
+<Card title="See what your project would hit" icon="magnifying-glass" href="/quickstart">
+  The analysis runs before anything is built, so you can read the warnings
+  without deploying.
+</Card>

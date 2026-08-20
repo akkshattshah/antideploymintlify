@@ -1,0 +1,87 @@
+---
+title: "Roll Back a Bad Deploy"
+sidebarTitle: "Rolling back"
+description: "Getting back to the version that worked, in about forty seconds, without rebuilding anything and without your database going with it."
+---
+
+**Pick a previous deployment and release it.** It takes about forty seconds,
+because nothing is rebuilt. The image already exists.
+
+## Why it is fast
+
+Every deployment keeps the image it produced. Rolling back points the service
+back at one of those images, so the work is a release rather than a build.
+
+| | Time |
+| --- | --- |
+| Roll back to an existing image | ~40 seconds |
+| Rebuild from source | Minutes |
+
+The difference matters at the moment you need it. Reverting a commit and waiting
+for a full build is the same three minutes you did not have when you noticed the
+problem.
+
+<Steps>
+  <Step title="Open the application's deployments">
+    Every deploy is listed with its status, when it ran, and, when it came from
+    GitHub, the commit it built.
+  </Step>
+  <Step title="Choose the one that worked">
+    Usually the one before the one you just shipped.
+  </Step>
+  <Step title="Release it">
+    The service is pointed back at that image. No rebuild, no queue.
+  </Step>
+</Steps>
+
+## What rolls back, and what does not
+
+This is the part worth understanding before you need it.
+
+| | Rolls back |
+| --- | --- |
+| Your application code | Yes, to exactly the image that ran before |
+| Your environment variables | No, the current values are used |
+| **Your database schema** | **No** |
+| Your database contents | No |
+
+**A rollback is not a migration rollback.** If the deploy you are reverting
+added a column, dropped a table, or rewrote data, the old code is now running
+against the new schema. Sometimes that is fine, because the old code simply does
+not know about the new column. Sometimes it is not, because the old code selects
+a column your migration renamed.
+
+<Warning>
+  Before rolling back past a migration, know what the migration did. Reverting
+  application code is instant and safe. Reverting a schema is neither, and no
+  platform can do it for you without risking your data.
+</Warning>
+
+## A failed deploy does not need a rollback
+
+Worth saying, because it is the more common case.
+
+If a deploy fails, the previous version stays up. The new version is not
+released and then reverted; it never takes traffic at all. Migrations run before
+the release, so a failed migration fails the deploy with your old version still
+serving.
+
+You only need a rollback when a deploy **succeeded** and the result is wrong.
+That is a different situation from a build error, and it is the one to plan for.
+
+## Deciding quickly
+
+When something is wrong in production, the useful question is not what broke, it
+is whether the previous version was fine. If it was, roll back first and
+diagnose after. Forty seconds of stale code beats twenty minutes of debugging
+under pressure.
+
+The deployment list gives you the commit each image was built from, so the diff
+between what works and what does not is one comparison away once you are no
+longer on fire.
+
+<Card title="Health and alerts" icon="heart-pulse" href="/operations/monitoring">
+  Health checks run every few minutes, and you are emailed when an application
+  changes state rather than on every check. That is usually how you find out you
+  need this page.
+</Card>
