@@ -1,6 +1,6 @@
 ---
 title: "Environment Variables"
-description: "Set the values your app reads from its environment — from the dashboard or over the API. Every one is encrypted at rest and write-only."
+description: "Set the values your app reads from its environment, from the dashboard or over the API. Every one is encrypted at rest and write-only."
 ---
 
 Your application reads its configuration from the environment. Antideploy
@@ -8,7 +8,7 @@ stores those values, encrypts them, and injects them when the app is released.
 
 <Note>
   There is one store, not two. Every variable you set is encrypted at rest and
-  cannot be read back — so there is no separate, weaker place to put
+  cannot be read back, so there is no separate, weaker place to put
   non-sensitive values, and no decision to make about which to use. See
   [Secrets](/configuration/secrets).
 </Note>
@@ -45,7 +45,7 @@ and clients that read those instead of a URL:
 
 ## When changes take effect
 
-Every change — added, updated, or removed — applies on the next deployment. A
+Every change (added, updated, or removed) applies on the next deployment. A
 running container's environment is fixed for the life of that revision, so
 there is no way to change a value under a running app.
 
@@ -63,7 +63,7 @@ expects and shows them in the dashboard as fields to fill in.
 
 ## Setting variables over the API
 
-Variables can be written with a project API key. They are write-only — nothing,
+Variables can be written with a project API key. They are write-only: nothing,
 including a valid key, reads the values back.
 
 ```bash

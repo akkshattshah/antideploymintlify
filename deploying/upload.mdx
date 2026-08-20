@@ -1,7 +1,7 @@
 ---
 title: "Deploy by Uploading a Folder"
 sidebarTitle: "Upload"
-description: "Pick a folder in the dashboard and deploy it — no Git repository, no CLI, nothing to install."
+description: "Pick a folder in the dashboard and deploy it: no Git repository, no CLI, nothing to install."
 ---
 
 Upload deploy ships an application straight from your machine. You choose a
@@ -10,15 +10,15 @@ and puts it live.
 
 ## When to use it
 
-* **No Git repository** — the project lives only on disk, or came out of a tool
+* **No Git repository**: the project lives only on disk, or came out of a tool
   that never made one.
-* **A quick test** — you want to see it running somewhere real before wiring up
+* **A quick test**: you want to see it running somewhere real before wiring up
   anything permanent.
-* **An AI-generated project** — Claude Code, Cursor, Bolt and the like leave you
+* **An AI-generated project**: Claude Code, Cursor, Bolt and the like leave you
   a folder, and a folder is exactly what this takes.
 
 <Note>
-  Uploading does not watch for changes. To update the app, upload again — or
+  Uploading does not watch for changes. To update the app, upload again, or
   connect [GitHub](/deploying/github) so every push redeploys, or push over the
   [API](/api/deploy).
 </Note>
@@ -31,7 +31,7 @@ and puts it live.
   </Step>
 
   <Step title="Pick the folder">
-    Your browser opens a folder picker. Select the **project root** — the
+    Your browser opens a folder picker. Select the **project root**, the
     directory holding `package.json`, `requirements.txt`, or `index.html`.
 
     Dependency and build directories are filtered out as it reads, so there is
@@ -40,7 +40,7 @@ and puts it live.
 
   <Step title="Review what was detected">
     Antideploy shows the runtime, framework, install and start commands, the
-    port, and any database it found — each with the evidence behind it.
+    port, and any database it found, each with the evidence behind it.
 
     Read the warnings and hazards here. This is the moment to catch a project
     that will build fine and then not do what you meant.
@@ -70,7 +70,7 @@ side, so sending them wastes your upload budget and changes nothing.
 | --- | --- |
 | Total size | 28 MB, after exclusions |
 | File count | 4,000 files |
-| Per-file size | 5 MB — larger files are skipped |
+| Per-file size | 5 MB; larger files are skipped |
 | Format | A folder. ZIP and other archives are not accepted here |
 
 <Note>
@@ -90,7 +90,7 @@ side, so sending them wastes your upload budget and changes nothing.
 | Records the commit that built     | ❌      | ✅      |
 
 Preview environments, per-branch deploys and pull-request builds do not exist on
-either path — see [what is not provisioned](/infrastructure/overview).
+either path; see [what is not provisioned](/infrastructure/overview).
 
 <Card title="Environment variables" icon="key" href="/configuration/environment-variables">
   Supplying the values your app expects before the first deploy.

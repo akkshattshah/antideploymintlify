@@ -25,7 +25,7 @@ anything.
 
   <Step title="Install the Antideploy GitHub App">
     You are sent to GitHub to install it. Grant access to **selected
-    repositories** rather than all of them unless you have a reason not to — you
+    repositories** rather than all of them unless you have a reason not to; you
     can add more later without reinstalling.
   </Step>
 
@@ -35,7 +35,7 @@ anything.
 
   <Step title="Review the analysis">
     Antideploy reads the repository and shows what it found: runtime, framework,
-    install and build commands, start command, port, and any database — each
+    install and build commands, start command, port, and any database, each
     with the evidence behind it.
 
     Read the warnings and hazards before deploying, not after.
@@ -63,8 +63,8 @@ the reason. A failed push never takes your app down.
 
 ## Repositories holding more than one project
 
-If the repository contains several projects — a frontend and a backend, or a
-folder of services — Antideploy will say so, and list the directories that look
+If the repository contains several projects (a frontend and a backend, or a
+folder of services), Antideploy will say so, and list the directories that look
 like projects in their own right.
 
 Pick the one to deploy and it is built as though that directory were the whole
@@ -75,7 +75,7 @@ repository: its manifest, its dependencies, its start command.
   two applications from the same repository and point each at its own directory.
 
   If nothing at the repository root is buildable, Antideploy will not offer a
-  Deploy button until you have chosen a directory — the build could only fail.
+  Deploy button until you have chosen a directory: the build could only fail.
 </Warning>
 
 ## Build configuration

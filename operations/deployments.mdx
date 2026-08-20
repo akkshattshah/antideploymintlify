@@ -4,13 +4,13 @@ sidebarTitle: "Deployments"
 description: "Every release is recorded, and any previous one that produced an image can be restored without a rebuild."
 ---
 
-Every deploy is recorded against the application — what it built, how it ended,
+Every deploy is recorded against the application: what it built, how it ended,
 and the image it produced. That last part is what makes rollback instant.
 
 ## Deployment history
 
 The **Deployments** tab lists releases newest first. Each row carries its
-status, when it ran, and — when the deploy came from GitHub — the commit it
+status, when it ran, and (when the deploy came from GitHub) the commit it
 built.
 
 ### Statuses
@@ -30,7 +30,7 @@ the failure shows what the container printed on its way out.
 ## Rolling back
 
 Any earlier deployment that produced an image can be restored. Antideploy
-points the service back at that image — there is no rebuild, so it takes about
+points the service back at that image; there is no rebuild, so it takes about
 as long as a release rather than a full deploy.
 
 <Steps>
@@ -60,7 +60,7 @@ as long as a release rather than a full deploy.
 
 The running version keeps serving until the new one has been built and has
 passed its health check. If the new version fails to start, the old one is left
-in place and the deploy is marked failed — you do not get a window where
+in place and the deploy is marked failed; you do not get a window where
 neither is up.
 
 <Note>

@@ -1,6 +1,6 @@
 ---
 title: "Managed Compute: Containers and Scale-to-Zero"
-description: "How Antideploy runs your app — container sizing, cold starts, and the single-instance limit."
+description: "How Antideploy runs your app: container sizing, cold starts, and the single-instance limit."
 ---
 
 Every app runs as a container. You do not choose a machine type, write a
@@ -39,7 +39,7 @@ This has consequences worth knowing:
 
 - Concurrent requests are handled by one container. A CPU-bound app under load
   will queue.
-- In-memory state is not shared across instances, because there is only one —
+- In-memory state is not shared across instances, because there is only one,
   which makes in-memory caching and sessions work, but they are lost on every
   restart and redeploy.
 - Canary and percentage-based rollouts are not possible, since they require
@@ -61,10 +61,10 @@ Your container is built from source on every deploy.
 - **Buildpacks** detect your runtime and produce an image with no Dockerfile
   required.
 - **Your own Dockerfile**, when one sits at the root of the directory being
-  built, is used instead. A Dockerfile nested in a subdirectory is not — the
+  built, is used instead. A Dockerfile nested in a subdirectory is not: the
   build runs at the root and would not find it.
 - **Static sites** skip the buildpack lifecycle entirely and are layered onto
-  a minimal server image — roughly seventy seconds instead of three minutes.
+  a minimal server image, roughly seventy seconds instead of three minutes.
 
 Build logs are captured and shown in the dashboard, including when a build
 fails.

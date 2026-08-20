@@ -1,7 +1,7 @@
 ---
 title: "Deploy from a Coding Agent"
 sidebarTitle: "Coding agent (MCP)"
-description: "Give Claude Code, Cursor, or any MCP client the ability to deploy your project — no browser, no Dockerfile, nothing to configure."
+description: "Give Claude Code, Cursor, or any MCP client the ability to deploy your project: no browser, no Dockerfile, nothing to configure."
 ---
 
 Antideploy ships an [MCP](https://modelcontextprotocol.io) server, so the agent
@@ -13,11 +13,11 @@ speaks MCP.
 
 ## When to use it
 
-* **An agent is doing the work** — you would rather not leave the conversation
+* **An agent is doing the work**: you would rather not leave the conversation
   to ship what it just wrote.
-* **You want the deploy in the loop** — the agent reads the build result and
+* **You want the deploy in the loop**: the agent reads the build result and
   can fix what broke without you relaying it.
-* **Nothing to install** — your agent runs the server with `npx` on demand.
+* **Nothing to install**: your agent runs the server with `npx` on demand.
 
 <Note>
   These are not exclusive. Connect [GitHub](/deploying/github) later and every
@@ -32,7 +32,7 @@ speaks MCP.
   <Step title="Create an application and an API key">
     Create the application in the dashboard, then create an API key for it.
 
-    The key identifies the application, so you never pass an application id —
+    The key identifies the application, so you never pass an application id:
     one key, one app.
   </Step>
 
@@ -95,7 +95,7 @@ static site is usually live in about thirty seconds.
 
 A `.env` in the project directory **is uploaded**, on purpose. Its values go
 into the encrypted secret store, and the file itself is then dropped from the
-build — so you do not retype nine API keys you already have on disk.
+build, so you do not retype nine API keys you already have on disk.
 
 Move the file before deploying if that is not what you want. See
 [secrets](/configuration/secrets) for how values are stored, and
@@ -139,7 +139,7 @@ costs you an error rather than a transfer.
 | Who triggers it | Your agent | A push to the default branch | You, in the dashboard |
 | Needs a repository | No | Yes | No |
 | Redeploys on push | No | Yes | No |
-| Leaves the conversation | No | — | Yes |
+| Leaves the conversation | No | n/a | Yes |
 
 <Card title="API reference" icon="terminal" href="/api/overview">
   The MCP server is a thin client over the HTTP API. Anything it can do, a

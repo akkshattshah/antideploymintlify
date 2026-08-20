@@ -9,18 +9,18 @@ choose a plan, a size, or a region.
 ## When a database is created
 
 During analysis, Antideploy looks for evidence that your code talks to
-Postgres — an ORM or a driver in your dependencies:
+Postgres, an ORM or a driver in your dependencies:
 
-- **Node** — Prisma, Drizzle, TypeORM, Sequelize, Knex, `pg`, `postgres`
-- **Python** — SQLAlchemy, Django ORM, `psycopg2`, `asyncpg`
-- **Other runtimes** — the equivalent Postgres client for your language
+- **Node**: Prisma, Drizzle, TypeORM, Sequelize, Knex, `pg`, `postgres`
+- **Python**: SQLAlchemy, Django ORM, `psycopg2`, `asyncpg`
+- **Other runtimes**: the equivalent Postgres client for your language
 
 When one is found, a database is provisioned before your first deployment
 finishes, and its connection string is injected as `DATABASE_URL`.
 
 <Note>
 Provisioning is idempotent per application. Redeploying reuses the existing
-database rather than creating a second one — your data survives every deploy.
+database rather than creating a second one; your data survives every deploy.
 </Note>
 
 ## Using it
@@ -58,8 +58,8 @@ release, taking precedence over anything Antideploy would have provisioned.
 
 ## Browsing your data
 
-The dashboard includes a read-only browser for your application's database —
-tables, columns, and row counts — so you can confirm a migration landed
+The dashboard includes a read-only browser for your application's database
+(tables, columns, and row counts), so you can confirm a migration landed
 without connecting a client.
 
 This works both for databases Antideploy provisioned and for a Postgres URL
@@ -78,6 +78,6 @@ database and everything in it.
 
 <Warning>
 Deletion is permanent. Antideploy does not expose backups, snapshots or
-point-in-time restore — if you need a copy of your data, take one yourself
+point-in-time restore; if you need a copy of your data, take one yourself
 with `pg_dump` before deleting an application.
 </Warning>

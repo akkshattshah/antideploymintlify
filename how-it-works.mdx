@@ -1,6 +1,6 @@
 ---
 title: "How Antideploy Analyzes Your Code and Deploys It"
-description: "What happens between handing Antideploy your project and getting a live URL — analysis, provisioning, build, and release."
+description: "What happens between handing Antideploy your project and getting a live URL: analysis, provisioning, build, and release."
 ---
 
 You never fill in a form describing your application. Antideploy reads the
@@ -11,18 +11,18 @@ page is what happens at each stage.
   <Step title="Ingest">
     Your source arrives as a GitHub repository, a folder upload, or an archive
     pushed to the API. Dependency and build directories (`node_modules`,
-    `.git`, `dist`, `.next`, `build`) are excluded — you don't need to clean
+    `.git`, `dist`, `.next`, `build`) are excluded; you don't need to clean
     the project first.
   </Step>
 
   <Step title="Analysis">
     Antideploy reads your manifests and source to determine:
 
-    - **Runtime** — Node, Python, Go, Ruby, Java, or a Dockerfile
-    - **Framework** — Next.js, Vite, Express, Flask, Django, Rails, or a static site
-    - **Build and start commands** — inferred from your scripts and conventions
-    - **Port** — what your app will listen on
-    - **Database** — whether your code uses Postgres, and through which ORM
+    - **Runtime**: Node, Python, Go, Ruby, Java, or a Dockerfile
+    - **Framework**: Next.js, Vite, Express, Flask, Django, Rails, or a static site
+    - **Build and start commands**: inferred from your scripts and conventions
+    - **Port**: what your app will listen on
+    - **Database**: whether your code uses Postgres, and through which ORM
 
     Every conclusion comes with the evidence for it, so you can see *why* it
     decided something before you deploy.
@@ -39,7 +39,7 @@ page is what happens at each stage.
 
     This is the only infrastructure Antideploy provisions. If your project
     also needs object storage, Redis, a queue or a scheduler, analysis will
-    say so — as a warning or a hazard — and you supply it yourself.
+    say so, as a warning or a hazard, and you supply it yourself.
   </Step>
 
   <Step title="Build">
@@ -51,12 +51,12 @@ page is what happens at each stage.
 
     <Note>
       The root, specifically. A Dockerfile at `services/api/Dockerfile` is not
-      used — the build runs at the root, where that file is not. If yours lives
+      used: the build runs at the root, where that file is not. If yours lives
       in a subdirectory, either set that directory as the one to build, or move
       the Dockerfile up.
     </Note>
 
-    Static sites skip the buildpack lifecycle entirely — there is nothing to
+    Static sites skip the buildpack lifecycle entirely: there is nothing to
     compile, so the files are layered onto a minimal server image. This takes
     a static site from roughly three minutes to about seventy seconds.
 
@@ -75,7 +75,7 @@ page is what happens at each stage.
     first request after an idle period pays a cold start.
 
     Antideploy checks each app's health every few minutes and emails you when
-    an app changes state — goes down, or recovers.
+    an app changes state: goes down, or recovers.
   </Step>
 </Steps>
 
@@ -98,7 +98,7 @@ Analysis produces two kinds of finding, and the difference matters.
 </CardGroup>
 
 Both are returned as structured data through the API, not just rendered in the
-dashboard — so a script or agent can read and relay them.
+dashboard, so a script or agent can read and relay them.
 
 <Warning>
 A deploy can succeed and still not do what its author expects. Hazards are how

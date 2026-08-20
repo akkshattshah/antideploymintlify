@@ -1,10 +1,10 @@
 ---
 title: "Deploy from the CLI or an AI Agent"
-description: "Push a project directory to Antideploy over the REST API and poll it to completion — the flow an AI coding agent uses when you tell it to ship."
+description: "Push a project directory to Antideploy over the REST API and poll it to completion: the flow an AI coding agent uses when you tell it to ship."
 ---
 
 Antideploy has no CLI to install. Deploys are a single HTTP request, which
-means anything that can run `curl` — including a coding agent — can ship your
+means anything that can run `curl`, including a coding agent, can ship your
 project without extra tooling.
 
 ## Get a key
@@ -15,7 +15,7 @@ pass an application id.
 
 <Warning>
 A key can deploy to its application and write its environment variables. Treat
-it like a deploy credential. Secrets are write-only over the API — nothing,
+it like a deploy credential. Secrets are write-only over the API: nothing,
 including a valid key, can read values back.
 </Warning>
 
@@ -36,7 +36,7 @@ Pushing only `index.html` (or any single entry file) **succeeds**. It builds,
 deploys, and serves a page whose scripts, styles and images all 404. This is
 the most common mistake on this API. Antideploy warns you when a page
 references files that were not in the upload, but the deploy still goes
-through — check the `files` array in the response.
+through; check the `files` array in the response.
 </Warning>
 
 ### Response
@@ -84,9 +84,9 @@ curl https://antideploy.com/api/v1/deployments/$TASK_ID \
 Poll until `status` is `succeeded` or `failed`. The response carries per-step
 progress, the analyzed spec, and two fields worth reading rather than ignoring:
 
-- **`warnings`** — things that will work but probably aren't what you meant.
+- **`warnings`**: things that will work but probably aren't what you meant.
   Missing referenced assets, no lockfile, two deployables in one repository.
-- **`hazards`** — structured facts about what *won't* work once live. Uploads
+- **`hazards`**: structured facts about what *won't* work once live. Uploads
   written to a temporary disk, scheduled tasks that never fire.
 
 <Note>
@@ -109,7 +109,7 @@ curl -X POST https://antideploy.com/api/v1/deploy \
 ```
 
 Mismatched counts are rejected with `paths_mismatch` rather than silently
-flattening your directory structure. Prefer `archive` — it cannot get this
+flattening your directory structure. Prefer `archive`: it cannot get this
 wrong.
 
 ## Errors
@@ -146,6 +146,6 @@ Build output and dependency directories (`node_modules`, `.git`, `dist`,
 curl https://antideploy.com/api/v1
 ```
 
-Returns the whole contract as JSON — endpoints, request shapes, error codes
+Returns the whole contract as JSON: endpoints, request shapes, error codes
 and current limits. No key required. If you are an agent that has been handed
 a key and nothing else, start here.

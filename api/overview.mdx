@@ -1,10 +1,10 @@
 ---
-title: "Antideploy REST API — Overview"
+title: "Antideploy REST API: Overview"
 description: "Base URL, authentication, the four endpoints, rate limits, and error format for the Antideploy API."
 ---
 
 The Antideploy API deploys a project and reports on it. It is deliberately
-small — four endpoints — because that is all deploying takes.
+small (four endpoints) because that is all deploying takes.
 
 ## Base URL
 
@@ -46,7 +46,7 @@ are acting on, so no application id is ever sent.
 | `GET` | `/api/v1/secrets` | List variable names. Never values. |
 
 That is the complete surface. There are no endpoints for creating,
-listing or deleting applications — projects are created in the dashboard,
+listing or deleting applications: projects are created in the dashboard,
 which is also where keys are issued.
 
 <Card title="Deploy over the API" icon="rocket" href="/api/deploy">
@@ -55,7 +55,7 @@ which is also where keys are issued.
 
 ## Request format
 
-`POST /api/v1/deploy` is **`multipart/form-data`** — it carries your source
+`POST /api/v1/deploy` is **`multipart/form-data`**: it carries your source
 tree. Everything else is JSON.
 
 ## Rate limits
@@ -104,5 +104,5 @@ releasing take a minute or two. Poll `/api/v1/deployments/{taskId}` until
 `status` is `succeeded` or `failed`.
 
 The poll response carries `warnings` and `hazards` as structured data. A
-deploy can succeed and still not behave as its author expects — those fields
+deploy can succeed and still not behave as its author expects; those fields
 are how you find out.

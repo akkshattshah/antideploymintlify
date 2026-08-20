@@ -1,12 +1,12 @@
 ---
 title: "Get Your First App Live in 5 Minutes"
-description: "Connect a GitHub repo, upload a folder, or push over the API — Antideploy analyzes your code and deploys it."
+description: "Connect a GitHub repo, upload a folder, or push over the API: Antideploy analyzes your code and deploys it."
 ---
 
 Three ways in. All three end at the same place: Antideploy reads your code,
 works out what it needs, builds it, and gives you an HTTPS URL.
 
-## Method 1 — GitHub
+## Method 1: GitHub
 
 Best when you want every push to redeploy.
 
@@ -24,7 +24,7 @@ Best when you want every push to redeploy.
 
   <Step title="Review what it found">
     You'll see the detected runtime, framework, build and start commands, port,
-    and whether a database is needed — with the evidence for each. Warnings and
+    and whether a database is needed, with the evidence for each. Warnings and
     hazards appear here, before anything is built.
   </Step>
 
@@ -36,7 +36,7 @@ Best when you want every push to redeploy.
 
 Every subsequent push to the default branch redeploys automatically.
 
-## Method 2 — Upload a folder
+## Method 2: Upload a folder
 
 Best when there's no Git repo, or the code isn't on GitHub.
 
@@ -48,7 +48,7 @@ Best when there's no Git repo, or the code isn't on GitHub.
   <Step title="Drag your folder in">
     Drop the project folder or a `.zip` onto the upload area. Dependency and
     build directories (`node_modules`, `.git`, `dist`, `.next`) are excluded
-    automatically — you don't need to clean the folder first.
+    automatically; you don't need to clean the folder first.
   </Step>
 
   <Step title="Review and deploy">
@@ -58,7 +58,7 @@ Best when there's no Git repo, or the code isn't on GitHub.
 
 To ship a new version, upload the folder again.
 
-## Method 3 — Push over the API
+## Method 3: Push over the API
 
 Best for scripts and AI coding agents. There is no CLI to install.
 
@@ -81,7 +81,7 @@ Best for scripts and AI coding agents. There is no CLI to install.
     <Warning>
     Send the whole directory, not just your entry file. A push containing only
     `index.html` succeeds, deploys, and then serves a page whose scripts,
-    styles and images all 404. Check the `files` array in the response — if you
+    styles and images all 404. Check the `files` array in the response: if you
     expected a project and see one file, the upload was wrong.
     </Warning>
   </Step>
@@ -113,5 +113,5 @@ checks that email you if the app goes down.
 ## Before you rely on it
 
 Antideploy raises **hazards** during analysis for things that will not work
-once deployed — files written to local disk, background workers, scheduled
+once deployed: files written to local disk, background workers, scheduled
 jobs. Read them. They are the difference between "deployed" and "working."

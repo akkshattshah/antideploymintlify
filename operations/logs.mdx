@@ -5,7 +5,7 @@ description: "Read what your running application printed to stdout and stderr, f
 ---
 
 Everything your application writes to `stdout` and `stderr` is captured while it
-runs. No agent, sidecar or SDK is involved — it is collected by the platform
+runs. No agent, sidecar or SDK is involved; it is collected by the platform
 underneath, and the dashboard reads it back.
 
 ## Reading them
@@ -22,7 +22,7 @@ stop. That is the whole control surface.
 ## What you see
 
 * Your application's own output, verbatim, oldest line first.
-* Failed requests — the platform's own record of any request that returned 4xx
+* Failed requests: the platform's own record of any request that returned 4xx
   or 5xx, which catches errors your app never logged itself.
 
 Successful requests are filtered out. Most frameworks print their own access
@@ -57,7 +57,7 @@ Reading runtime logs requires a permission on the underlying cloud project that
 is not granted by default. If it is missing, the Logs tab says so and names the
 role to grant rather than showing an empty panel.
 
-Build logs are separate — they are written to Antideploy's own storage and
+Build logs are separate: they are written to Antideploy's own storage and
 appear against the deployment, including when a build fails.
 
 <Card title="Deployments" icon="clock-rotate-left" href="/operations/deployments">

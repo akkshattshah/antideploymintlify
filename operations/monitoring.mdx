@@ -5,7 +5,7 @@ description: "Antideploy checks every deployed app every few minutes and emails 
 ---
 
 Antideploy watches whether your app is up. It does not collect metrics, and
-there is no metrics dashboard — knowing that is more useful than discovering it
+there is no metrics dashboard; knowing that is more useful than discovering it
 during an incident.
 
 ## What is checked
@@ -17,11 +17,11 @@ deployment and records one of four states.
 | ------------ | ------------------------------------------------------------------------ |
 | **Healthy**  | The service is ready and not returning an unusual number of errors.      |
 | **Degraded** | The service is running, but three or more requests returned a 5xx in the last fifteen minutes. |
-| **Down**     | The service is not ready — it failed to start, or the revision is broken. |
+| **Down**     | The service is not ready: it failed to start, or the revision is broken. |
 | **Unknown**  | We could not reach the platform to ask.                                  |
 
 The state appears on your application in the dashboard. Without this check the
-dashboard would report whatever was true at deploy time — an app that died an
+dashboard would report whatever was true at deploy time: an app that died an
 hour ago would still show a green badge, which is worse than showing nothing.
 
 <Note>
@@ -32,7 +32,7 @@ hour ago would still show a green badge, which is worse than showing nothing.
 
 ## Email notifications
 
-You are emailed when an application **changes state** — when it goes down, and
+You are emailed when an application **changes state**: when it goes down, and
 again when it recovers. You are not emailed on every check, and there is no
 digest.
 
@@ -47,7 +47,7 @@ deploy fails.
   tab, no charts, and no alert rules to configure.
 
   If you need application metrics, instrument your app and send them to a
-  service you control — the credentials go in your environment variables like
+  service you control; the credentials go in your environment variables like
   any other.
 </Warning>
 

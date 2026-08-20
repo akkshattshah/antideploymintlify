@@ -1,7 +1,7 @@
 ---
 title: "Cloud Run the Hard Way"
 sidebarTitle: "Cloud Run the hard way"
-description: "Seven things that break when you deploy a real application to Cloud Run by hand, and what each one actually means — including the build that reports SUCCESS and FAILURE at once."
+description: "Seven things that break when you deploy a real application to Cloud Run by hand, and what each one actually means, including the build that reports SUCCESS and FAILURE at once."
 ---
 
 Before Antideploy automated any of this, we deployed a real application to Cloud
@@ -16,7 +16,7 @@ than the thing that is wrong.
 <Note>
   This is a record of what broke, not a tutorial. If you want the outcome
   without the process, [connect a repository](/deploying/github) and Antideploy
-  does all of it — that is the entire reason it exists.
+  does all of it. That is the entire reason it exists.
 </Note>
 
 ## 1. Cloud Build eats your `$PORT`
@@ -62,7 +62,7 @@ mention it.
 ## 4. The deployer cannot read its own project number
 
 Naming the account in the previous step requires your project *number*, not your
-project id — and reading it needs `resourcemanager.projects.get`, which a
+project id, and reading it needs `resourcemanager.projects.get`, which a
 deploying service account typically does not have.
 
 **The fix:** store the number in configuration rather than granting another role
@@ -93,8 +93,8 @@ step rather than a problem inside it.
 ```
 
 **What is happening:** reading Cloud Logging needs `roles/logging.viewer`, which
-your deployer probably lacks. So the build fails and you cannot find out why —
-which, if you are building a platform, means your users cannot either.
+your deployer probably lacks. So the build fails and you cannot find out
+why. Which, if you are building a platform, means your users cannot either.
 
 **The fix:** do not read Cloud Logging. Have Cloud Build write logs to a bucket
 you own, with `logsBucket` set and `options.logging` set to `GCS_ONLY`. If you
@@ -103,7 +103,7 @@ all.
 
 ## 7. A logs bucket needs `storage.admin`, not `objectAdmin`
 
-Having moved logs to your own bucket, the obvious grant is `objectAdmin` — the
+Having moved logs to your own bucket, the obvious grant is `objectAdmin`: the
 build only writes objects, after all.
 
 That fails. Cloud Build validates the bucket by reading its *metadata*
@@ -127,7 +127,7 @@ Workspace organisations and is not mentioned when the thing it blocks fails.
 | `iam.allowedPolicyMemberDomains` | Granting `allUsers`, so no service can be made public. |
 
 Override the second at **project** scope rather than organisation-wide. Then
-wait — propagation takes a few minutes, and until it completes `setIamPolicy`
+wait. Propagation takes a few minutes, and until it completes `setIamPolicy`
 keeps returning:
 
 ```
@@ -152,12 +152,12 @@ None of these are exotic. They are what stands between a working application and
 a URL, on one of the more approachable container platforms, for one small service
 deployed by someone reading the documentation carefully.
 
-Each is individually solvable in ten minutes and collectively they cost a day —
+Each is individually solvable in ten minutes and collectively they cost a day,
 and none of them is about your application. They are all about the platform
 underneath it.
 
 <Card title="Or skip all of it" icon="rocket" href="/quickstart">
   Antideploy encodes every one of these. Connect a repository and you get the
-  outcome — built, deployed, logs readable, service public — without meeting any
+  outcome (built, deployed, logs readable, service public) without meeting any
   of the seven.
 </Card>
