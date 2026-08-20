@@ -1,0 +1,163 @@
+---
+title: "Cloud Run the Hard Way"
+sidebarTitle: "Cloud Run the hard way"
+description: "Seven things that break when you deploy a real application to Cloud Run by hand, and what each one actually means — including the build that reports SUCCESS and FAILURE at once."
+---
+
+Before Antideploy automated any of this, we deployed a real application to Cloud
+Run by hand, over the REST API, to find out what the process actually demands.
+
+It failed six times.
+
+Every failure is written down here, with the error you see and what it really
+means. None of them are in the quickstart. Most of them report something other
+than the thing that is wrong.
+
+<Note>
+  This is a record of what broke, not a tutorial. If you want the outcome
+  without the process, [connect a repository](/deploying/github) and Antideploy
+  does all of it — that is the entire reason it exists.
+</Note>
+
+## 1. Cloud Build eats your `$PORT`
+
+**You see:**
+
+```
+"PORT" is not a valid built-in substitution
+```
+
+**What is happening:** Cloud Build parses `$PORT` in your start command as one
+of *its* substitution variables and rejects the build outright.
+
+But `$PORT` has to survive into the container, because Cloud Run sets it at
+runtime and your app must listen on it.
+
+**The fix:** send `$$PORT`. Cloud Build unescapes it to `$PORT` on the way
+through.
+
+## 2. GitHub tarballs are nested
+
+Every archive GitHub produces wraps the contents in an `owner-repo-sha/`
+directory. Cloud Build expects the source at the archive root, so a build
+straight from a GitHub tarball finds nothing to build.
+
+**The fix:** re-pack the archive, stripping the leading directory.
+
+## 3. Cloud Build does not run as you
+
+This one causes several later failures, so it is worth internalising early.
+
+Your build does **not** run as the account that submitted it. It runs as:
+
+```
+<project-number>-compute@developer.gserviceaccount.com
+```
+
+On projects with "secure by default" enforcement, that account holds no
+project-wide role at all. It must be granted access to the source bucket and to
+the registry explicitly, or everything downstream fails in ways that do not
+mention it.
+
+## 4. The deployer cannot read its own project number
+
+Naming the account in the previous step requires your project *number*, not your
+project id — and reading it needs `resourcemanager.projects.get`, which a
+deploying service account typically does not have.
+
+**The fix:** store the number in configuration rather than granting another role
+to look it up. Adding a role to read a constant is a poor trade.
+
+## 5. A build step says SUCCESS and the build says FAILURE
+
+The worst one, because the build object actively misleads you.
+
+**You see:** a build whose steps all report `SUCCESS`, and whose overall status
+is `FAILURE`. No `statusDetail`. No `failureInfo`. Nothing naming a cause.
+
+**What is happening:** the image push was denied. Your build account needs
+`roles/artifactregistry.writer` on the repository. The step that built the image
+genuinely succeeded; the push that followed it did not, and that failure is not
+attributed to any step.
+
+**The fix:** grant `roles/artifactregistry.writer`, and treat "all steps
+succeeded but the build failed" as meaning a permissions problem after the last
+step rather than a problem inside it.
+
+## 6. You cannot read your own build logs
+
+**You see:**
+
+```
+403 Permission denied for all log views
+```
+
+**What is happening:** reading Cloud Logging needs `roles/logging.viewer`, which
+your deployer probably lacks. So the build fails and you cannot find out why —
+which, if you are building a platform, means your users cannot either.
+
+**The fix:** do not read Cloud Logging. Have Cloud Build write logs to a bucket
+you own, with `logsBucket` set and `options.logging` set to `GCS_ONLY`. If you
+already hold Storage Admin, the logs become readable with no additional IAM at
+all.
+
+## 7. A logs bucket needs `storage.admin`, not `objectAdmin`
+
+Having moved logs to your own bucket, the obvious grant is `objectAdmin` — the
+build only writes objects, after all.
+
+That fails. Cloud Build validates the bucket by reading its *metadata*
+(`storage.buckets.get`), which `objectAdmin` does not cover. You need
+bucket-scoped `roles/storage.admin`.
+
+<Warning>
+  GCS IAM is not read-your-writes. A grant that has just returned successfully
+  is not necessarily in effect. Wait a few seconds before creating the build, or
+  you will debug a permission you have already granted.
+</Warning>
+
+## Two organisation policies to override
+
+Both come from Google's "secure by default" baseline, which is applied to
+Workspace organisations and is not mentioned when the thing it blocks fails.
+
+| Policy | What it blocks |
+| --- | --- |
+| `iam.managed.disableServiceAccountKeyCreation` | Downloading a service account key at all. |
+| `iam.allowedPolicyMemberDomains` | Granting `allUsers`, so no service can be made public. |
+
+Override the second at **project** scope rather than organisation-wide. Then
+wait — propagation takes a few minutes, and until it completes `setIamPolicy`
+keeps returning:
+
+```
+users named in the policy do not belong to a permitted customer
+```
+
+Which does not sound like a propagation delay, and is one.
+
+## What it costs when it works
+
+On the first fully successful run:
+
+| | |
+| --- | --- |
+| Build | ~190s |
+| Service ready | ~20s after the build |
+| End to end | ~4 minutes |
+
+## The point
+
+None of these are exotic. They are what stands between a working application and
+a URL, on one of the more approachable container platforms, for one small service
+deployed by someone reading the documentation carefully.
+
+Each is individually solvable in ten minutes and collectively they cost a day —
+and none of them is about your application. They are all about the platform
+underneath it.
+
+<Card title="Or skip all of it" icon="rocket" href="/quickstart">
+  Antideploy encodes every one of these. Connect a repository and you get the
+  outcome — built, deployed, logs readable, service public — without meeting any
+  of the seven.
+</Card>

@@ -52,6 +52,12 @@
               "configuration/environment-variables",
               "configuration/secrets"
             ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/cloud-run-the-hard-way"
+            ]
           }
         ]
       },
