@@ -55,19 +55,34 @@ found, with the evidence, before anything is built.
 
 ## Using an AI coding agent?
 
-Give your agent the project's API key and this URL:
+Give your agent this URL. Nothing else, and no credential:
 
 ```
-https://antideploy.com/api/v1
+https://antideploy.com/llms.txt
 ```
 
-That returns the complete API contract as JSON: endpoints, request shapes,
-error codes and limits. No key is needed to read it. An agent can go from
-"here is a key" to a working deploy without a browser.
+It explains the whole path from an empty folder to a live URL, and links the
+full contract at `https://antideploy.com/api/v1`, which returns endpoints,
+request shapes, error codes and limits as JSON. Neither needs a credential to
+read.
 
-<Card title="Deploy over the API" icon="terminal" href="/api/deploy">
-  The full reference, with the one command that ships a project directory.
-</Card>
+The agent gets its own. It runs a [terminal login](/api/terminal-login), you
+approve one browser prompt, and from then on it creates projects and deploys
+them without you copying anything.
+
+<Warning>
+Do not paste an API key into a chat window. Anything pasted into a conversation
+is in that conversation's transcript for good, and the agent does not need it.
+</Warning>
+
+<CardGroup cols={2}>
+  <Card title="Terminal login" icon="terminal" href="/api/terminal-login">
+    How an agent signs in and creates a project on its own.
+  </Card>
+  <Card title="Deploy over the API" icon="rocket" href="/api/deploy">
+    The full reference, with the one command that ships a directory.
+  </Card>
+</CardGroup>
 
 ## What Antideploy does not do yet
 

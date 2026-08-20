@@ -7,17 +7,30 @@ Antideploy has no CLI to install. Deploys are a single HTTP request, which
 means anything that can run `curl`, including a coding agent, can ship your
 project without extra tooling.
 
-## Get a key
+## Get a credential
 
-Create a project in the dashboard and copy its API key. Keys are **scoped to
-one application**, so the key itself identifies where the code goes; you never
-pass an application id.
+You have two options, and which one you want depends on who is driving.
+
+**An agent is doing the work.** Let it run the
+[terminal login](/api/terminal-login). It gets an account token, creates the
+application over the API, and deploys, all without you copying anything. You
+approve one browser prompt the first time and never again.
+
+**You are doing it by hand, or setting up CI.** Create a project in the
+dashboard and copy its API key. Keys are **scoped to one application**, so the
+key itself identifies where the code goes; you never pass an application id.
 
 <Warning>
-A key can deploy to its application and write its environment variables. Treat
-it like a deploy credential. Secrets are write-only over the API: nothing,
-including a valid key, can read values back.
+Either credential can deploy and write environment variables. Treat both like
+deploy credentials. Secrets are write-only over the API: nothing, including a
+valid credential, can read values back.
 </Warning>
+
+<Note>
+An account token is entitled to more than one project, so it must name the one
+it is acting on: `?applicationId=<id>` on `/api/v1/deploy` and
+`/api/v1/secrets`. Every example below uses a project key, which does not.
+</Note>
 
 ## Deploy
 
@@ -58,6 +71,12 @@ through; check the `files` array in the response.
 `files` is the manifest of what was actually stored, capped at 50 entries with
 the remainder counted in `filesTruncated`. **Check it.** If you expected a
 project and see one file, the upload was wrong.
+
+<Note>
+Nothing is dropped silently. A file over the per-file limit fails the whole
+push with `400 too_large` and names it in a `files` array, so a `202` means
+every file you sent is in the build.
+</Note>
 
 An identical push returns `200` with `{"status": "unchanged"}` and builds
 nothing. Add `-F "force=true"` to rebuild anyway.

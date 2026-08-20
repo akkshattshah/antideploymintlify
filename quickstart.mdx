@@ -63,9 +63,14 @@ To ship a new version, upload the folder again.
 Best for scripts and AI coding agents. There is no CLI to install.
 
 <Steps>
-  <Step title="Create a project and copy its key">
-    In the dashboard, choose **New project → API**. You get a project API key,
-    shown once. It is scoped to that one project.
+  <Step title="Get a credential">
+    If an agent is doing this, let it run the
+    [terminal login](/api/terminal-login) itself. You approve one browser
+    prompt, and it creates the project and stores the token without anything
+    being copied or pasted.
+
+    Working by hand instead? In the dashboard, choose **New project → API**.
+    You get a project API key, shown once, scoped to that one project.
   </Step>
 
   <Step title="Push the project directory">
@@ -77,6 +82,9 @@ Best for scripts and AI coding agents. There is no CLI to install.
         -H "Authorization: Bearer $ANTIDEPLOY_KEY" \
         -F "archive=@-"
     ```
+
+    An account token has to say which project it is for: add
+    `?applicationId=$APP_ID` to the URL. A project key already knows.
 
     <Warning>
     Send the whole directory, not just your entry file. A push containing only
@@ -98,9 +106,13 @@ Best for scripts and AI coding agents. There is no CLI to install.
 </Steps>
 
 <Note>
-If you're pointing an AI agent at Antideploy, the full API contract is
-readable without a key at `https://antideploy.com/api/v1`. Give the agent that
-URL along with the project key.
+If you're pointing an AI agent at Antideploy, give it
+`https://antideploy.com/llms.txt` and nothing else. It explains the whole path
+from an empty terminal to a live URL, and links the full contract at
+`https://antideploy.com/api/v1`, which is readable without a credential.
+
+You do not need to hand it a key. It can get its own, and a credential pasted
+into a chat window stays in that conversation's transcript for good.
 </Note>
 
 See [Deploy over the API](/api/deploy) for the complete reference.

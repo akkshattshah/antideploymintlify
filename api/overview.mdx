@@ -1,10 +1,10 @@
 ---
 title: "Antideploy REST API: Overview"
-description: "Base URL, authentication, the four endpoints, rate limits, and error format for the Antideploy API."
+description: "Base URL, the two credential types, the endpoint surface, rate limits, and error format for the Antideploy API."
 ---
 
-The Antideploy API deploys a project and reports on it. It is deliberately
-small (four endpoints) because that is all deploying takes.
+The Antideploy API creates a project, deploys it, and reports on it. It is
+deliberately small, because that is all deploying takes.
 
 ## Base URL
 
@@ -15,39 +15,51 @@ https://antideploy.com/api/v1
 <Tip>
 That URL is also a live, unauthenticated description of the API. `curl` it and
 you get the full contract as JSON: request shapes, error codes, and current
-limits. If you are pointing an AI agent at Antideploy, give it this URL along
-with the project key.
+limits. If you are pointing an AI agent at Antideploy, give it
+`https://antideploy.com/llms.txt` and let it find the rest — it needs no
+credential from you at all.
 </Tip>
 
 ## Authentication
 
-Every request carries a project API key as a bearer token:
+Every request carries a bearer token:
 
 ```bash
 curl https://antideploy.com/api/v1/deployments/$TASK_ID \
   -H "Authorization: Bearer $ANTIDEPLOY_KEY"
 ```
 
-Keys are **scoped to a single application**. The key identifies which app you
-are acting on, so no application id is ever sent.
+There are two kinds. A **project key** (`ad_`) is scoped to a single
+application and identifies it, so no application id is ever sent. An **account
+token** (`adu_`) represents you, can create applications, and therefore has to
+name the one it is acting on with `?applicationId=<id>`.
 
-<Card title="Authentication" icon="key" href="/api/authentication">
-  Creating, rotating, and revoking keys.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Both credentials, what each can do, rotating and revoking.
+  </Card>
+  <Card title="Terminal login" icon="terminal" href="/api/terminal-login">
+    How an agent gets an account token without a browser.
+  </Card>
+</CardGroup>
 
 ## Endpoints
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/v1` | The API contract. No key required. |
+| `GET` | `/api/v1` | The API contract. No credential required. |
+| `POST` | `/api/v1/device/code` | Begin a terminal login. No credential required. |
+| `POST` | `/api/v1/device/token` | Poll it, and collect the account token. |
+| `POST` | `/api/v1/applications` | Create a project. Account tokens only. |
+| `GET` | `/api/v1/applications` | List your projects. |
 | `POST` | `/api/v1/deploy` | Push a project and deploy it. |
 | `GET` | `/api/v1/deployments/{taskId}` | Status, steps, spec, warnings, hazards. |
 | `PUT` | `/api/v1/secrets` | Write environment variables. |
 | `GET` | `/api/v1/secrets` | List variable names. Never values. |
 
-That is the complete surface. There are no endpoints for creating,
-listing or deleting applications: projects are created in the dashboard,
-which is also where keys are issued.
+That is the complete surface. Deleting an application is deliberately not on
+it: that needs the dashboard, so no credential sitting in a project directory
+can destroy one.
 
 <Card title="Deploy over the API" icon="rocket" href="/api/deploy">
   The full deploy reference, with the one command that ships a directory.
@@ -90,12 +102,18 @@ a `documentation` URL pointing back at the contract.
 
 | Status | Codes |
 | --- | --- |
-| 400 | `empty`, `bad_request`, `bad_archive`, `paths_mismatch`, `too_large` |
+| 400 | `empty`, `bad_request`, `bad_archive`, `paths_mismatch`, `too_large`, `application_required` |
 | 401 | `unauthorized` |
-| 409 | `deploy_in_progress` |
-| 429 | `rate_limited` |
+| 403 | `account_token_required` |
+| 404 | `not_found` |
+| 409 | `deploy_in_progress`, `name_taken` |
+| 429 | `rate_limited`, `limit_exceeded` |
 
 Match on `code`, not on the message text.
+
+Two carry more than a message, and are worth reading rather than just relaying:
+`too_large` lists every offending path in `files`, and `name_taken` returns the
+`applicationId` you already have, so a script can use it instead of failing.
 
 ## Asynchronous by design
 
