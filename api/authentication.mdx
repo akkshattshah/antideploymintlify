@@ -1,20 +1,34 @@
 ---
-title: "API Authentication: Project Keys"
-description: "How Antideploy API keys work: one key per application, how to create and revoke them, and what a leaked key can and cannot do."
+title: "API Authentication: Keys and Tokens"
+description: "The two Antideploy credentials: project keys scoped to one application, and account tokens that let an agent create projects and deploy without a browser."
 ---
 
-Antideploy uses bearer tokens. One key, one application.
+Antideploy uses bearer tokens. There are two kinds, and the difference is what
+they are allowed to create.
 
 ```bash
 curl https://antideploy.com/api/v1/deployments/$TASK_ID \
   -H "Authorization: Bearer $ANTIDEPLOY_KEY"
 ```
 
-## One key, one application
+| | Project key | Account token |
+| --- | --- | --- |
+| Prefix | `ad_` | `adu_` |
+| Represents | One application | You |
+| Created in | The dashboard | A [terminal login](/api/terminal-login) |
+| Create applications | No | Yes |
+| Safe to commit | Yes, by design | **No** |
+
+<Tip>
+If an agent is doing the work, you want an account token: it can create the
+project itself, so nothing has to be copied out of a browser. See
+[Terminal login](/api/terminal-login).
+</Tip>
+
+## Project keys
 
 A key is issued for a single project and can only act on that project. There
-are no account-wide keys, no organization keys, and no permission scopes to
-choose between.
+are no permission scopes to choose between.
 
 <Note>
 This is deliberate. A key pasted into a project directory ends up in more
@@ -22,7 +36,7 @@ places than its owner intends: a shell history, a config file, a commit. The
 blast radius of that should be one application, not an account.
 </Note>
 
-## Creating a key
+### Creating a key
 
 Keys are created in the dashboard, per project:
 
@@ -46,7 +60,7 @@ Keys are created in the dashboard, per project:
 Creating a project through **New project → API** issues its first key in the
 same step.
 
-## What a key can do
+### What a project key can do
 
 | | |
 | --- | --- |
@@ -57,38 +71,83 @@ same step.
 | Act on any other application | No |
 | Create, rename or delete applications | No |
 
+Because the key identifies the application, requests made with one never send
+an application id.
+
+## Account tokens
+
+An account token represents you rather than a project, which is what lets an
+agent create an application and deploy to it unattended. You get one by
+approving a browser prompt once — see [Terminal login](/api/terminal-login) for
+the full flow.
+
+### What an account token can do
+
+| | |
+| --- | --- |
+| Create applications | Yes |
+| Deploy to any application you own | Yes |
+| Write environment variables | Yes |
+| **Read environment variable values** | **No** |
+| **Delete an application** | **No** |
+| **Mint another account token** | **No** |
+
+Requests must name the application: `?applicationId=<id>`.
+
 <Warning>
-Secrets are **write-only** over the API. `GET /api/v1/secrets` returns key
-names and nothing else. There is no endpoint that returns a value, so a leaked
-key cannot be used to exfiltrate the credentials it wrote.
+Keep an account token out of your project directory. `~/.antideploy/config.json`
+with mode `0600`, or your agent's own credential store. A project key is built
+to survive being committed; this one is not.
+</Warning>
+
+That last row matters more than it looks. A credential that can mint its own
+successors cannot really be revoked, because whoever holds it just makes a
+replacement faster than you can kill them.
+
+<Warning>
+Secrets are **write-only** over the API, for both credentials. `GET
+/api/v1/secrets` returns key names and nothing else. There is no endpoint that
+returns a value, so a leaked credential cannot be used to exfiltrate what it
+wrote.
 </Warning>
 
 ## Revoking
 
-Open **API keys** for the project and revoke the key. It stops working
-immediately; revocation is checked on every request, not cached.
+Open **API keys** for the project to revoke a project key, or **Account tokens**
+to revoke a terminal login. Either stops working immediately; revocation is
+checked on every request, not cached.
 
 Revoke rather than delete: the row is kept so `Last used` remains visible,
-which is how you work out whether a leaked key was actually used.
+which is how you work out whether a leaked credential was actually used.
 
 ## Rotating
 
-There is no in-place rotation. Create the new key, update wherever the old one
-lives, confirm the new one has been used, then revoke the old one. Both work
-during the overlap.
+There is no in-place rotation. Create the new credential, update wherever the
+old one lives, confirm the new one has been used, then revoke the old one. Both
+work during the overlap.
 
-## Handing a key to an AI agent
+## Pointing an AI agent at Antideploy
 
-Give the agent the key **and** this URL:
+Give it this URL and nothing else:
 
 ```
-https://antideploy.com/api/v1
+https://antideploy.com/llms.txt
 ```
 
-It returns the whole API contract as JSON and needs no key to read it. An
-agent that has been handed only a credential, with no way to learn what the
+It explains the whole path from an empty terminal to a live URL, and points at
+`https://antideploy.com/api/v1`, which returns the full contract as JSON and
+needs no credential to read.
+
+An agent that has been handed only a credential, with no way to learn what the
 credential is for, will either guess or refuse, and refusing is the better of
 those two outcomes.
+
+<Warning>
+Do not paste a credential into a chat window. An agent that needs one should run
+the [terminal login](/api/terminal-login) and write the token to a file itself:
+anything pasted into a conversation is in that conversation's transcript for
+good.
+</Warning>
 
 <Card title="Deploy over the API" icon="rocket" href="/api/deploy">
   The push flow an agent should follow.

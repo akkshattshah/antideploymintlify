@@ -1,0 +1,170 @@
+---
+title: "Terminal Login: Deploy Without Opening a Browser"
+sidebarTitle: "Terminal login"
+description: "Sign in from a terminal, create projects over the API, and let an agent deploy without anyone pasting a credential into a chat window."
+---
+
+An agent can take a finished project from an empty folder to a live URL on its
+own. You approve one browser prompt, once, and never again.
+
+## What changed
+
+A project key **is** an application. That makes it safe to leave lying around,
+but it also means it cannot create the next project, so starting one used to
+mean opening the dashboard, minting a key, and pasting it back.
+
+Account tokens are the other half. They represent **you** rather than one
+project, so an agent holding one can create an application and deploy to it
+without a browser.
+
+| | Project key | Account token |
+| --- | --- | --- |
+| Prefix | `ad_` | `adu_` |
+| Scope | One application | Your account |
+| Create applications | No | Yes |
+| Deploy, write variables, poll status | Yes | Yes |
+| Read variable values | No | No |
+| Delete applications | No | No |
+| Safe to commit | Yes, by design | **No** |
+
+<Warning>
+An account token does not belong in your project directory. Keep it in
+`~/.antideploy/config.json` with mode `0600`, or in your agent's own credential
+store. Project keys are the ones built to survive a `git add .`.
+</Warning>
+
+## The flow
+
+<Steps>
+  <Step title="Ask for a code">
+    ```bash
+    curl -sS -X POST https://antideploy.com/api/v1/device/code \
+      -H 'content-type: application/json' \
+      -d '{"clientName":"Claude Code"}'
+    ```
+
+    ```json
+    {
+      "deviceCode": "K7fQ…",
+      "userCode": "WDJB-MJHT",
+      "verificationUri": "https://antideploy.com/activate",
+      "verificationUriComplete": "https://antideploy.com/activate?code=WDJB-MJHT",
+      "expiresIn": 900,
+      "interval": 5
+    }
+    ```
+  </Step>
+
+  <Step title="Show the user the link">
+    Print `verificationUriComplete` **and** `userCode`. The link already carries
+    the code, so nothing has to be typed.
+
+    Showing the code anyway is what makes the prompt safe: someone who arrived
+    from a link they did not generate can see it does not match their own
+    terminal, and refuse.
+  </Step>
+
+  <Step title="Poll while they approve">
+    ```bash
+    curl -sS -X POST https://antideploy.com/api/v1/device/token \
+      -H 'content-type: application/json' \
+      -d "{\"deviceCode\":\"$DEVICE_CODE\"}"
+    ```
+
+    Poll every `interval` seconds. Until someone approves, you get `400` with
+    `code: "authorization_pending"`, which means keep waiting.
+
+    | Code | Meaning |
+    | --- | --- |
+    | `authorization_pending` | Nobody has approved yet. Keep polling. |
+    | `access_denied` | They refused. Stop. |
+    | `expired_token` | The code expired or was already used. Start again. |
+  </Step>
+
+  <Step title="Store the token">
+    Approval returns `200` with the token. Codes are single use: a second poll
+    for the same `deviceCode` returns `expired_token`.
+
+    ```bash
+    mkdir -p ~/.antideploy && chmod 700 ~/.antideploy
+    # write the response's .token straight to the file
+    chmod 600 ~/.antideploy/config.json
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+**Never print the token.** Redirect it into a file. An account token echoed to
+a terminal is a live credential sitting in scrollback, and in the transcript of
+whatever agent is reading along. This is also why you should never ask a user
+to paste one into a chat.
+</Warning>
+
+## Create a project
+
+```bash
+curl -sS -X POST https://antideploy.com/api/v1/applications \
+  -H "authorization: Bearer $ANTIDEPLOY_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"name":"quote-board"}'
+```
+
+```json
+{
+  "applicationId": "d8cb3d74-5c3b-483d-8a31-e3b4efec6771",
+  "name": "quote-board",
+  "subdomain": null,
+  "dashboard": "https://antideploy.com/app/d8cb3d74-…"
+}
+```
+
+Save `applicationId` to `.antideploy.json` in the project. It holds no secret,
+so it can be committed, and a teammate who clones the repository deploys to the
+same application without configuring anything.
+
+<Note>
+A name you already have returns `409` with `code: "name_taken"` **and the
+existing `applicationId`**, so a script that runs twice reuses the project
+rather than leaving a trail of near-duplicates.
+</Note>
+
+## Deploy
+
+An account token is entitled to many applications, so it has to say which one:
+
+```bash
+tar czf - --exclude=.git --exclude=node_modules . |
+  curl -X POST "https://antideploy.com/api/v1/deploy?applicationId=$APP_ID" \
+    -H "authorization: Bearer $ANTIDEPLOY_TOKEN" \
+    -F "archive=@-"
+```
+
+`applicationId` goes in the query string rather than the form so a `404` or a
+`409` costs you a header instead of a finished upload of the whole project.
+
+The same applies to `/api/v1/secrets`. Project keys are unaffected: they still
+identify their own application and still send no id.
+
+## What it cannot do
+
+An account token is more powerful than a project key, so it is deliberately
+fenced:
+
+* **It cannot read secret values back.** No endpoint returns one, for any
+  credential.
+* **It cannot delete an application.** That needs the dashboard.
+* **It cannot mint another account token.** A credential that can clone itself
+  cannot be revoked, because the holder just makes a replacement faster than you
+  can kill them.
+
+Your account limits still apply, so a leaked token cannot create projects or
+spend beyond the ceiling your own account has.
+
+## Revoking
+
+Revoke from the dashboard. It stops working immediately; revocation is checked
+on every request, not cached.
+
+<Card title="Deploy over the API" icon="rocket" href="/api/deploy">
+  The full push reference.
+</Card>

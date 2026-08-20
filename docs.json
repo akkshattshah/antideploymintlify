@@ -27,6 +27,7 @@
               "deploying/github",
               "deploying/upload",
               "deploying/mcp",
+              "api/terminal-login",
               "api/deploy"
             ]
           },
@@ -74,6 +75,7 @@
             "pages": [
               "api/overview",
               "api/authentication",
+              "api/terminal-login",
               "api/deploy"
             ]
           }
