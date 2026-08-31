@@ -44,7 +44,7 @@ found, with the evidence, before anything is built.
   </Card>
 
   <Card title="HTTPS" icon="lock" href="/infrastructure/overview">
-    Every app is served over TLS on a generated URL.
+    Every app is served over TLS at its own address on `antideploy.com`.
   </Card>
 
   <Card title="Configuration" icon="key" href="/configuration/environment-variables">
@@ -87,9 +87,12 @@ is in that conversation's transcript for good, and the agent does not need it.
 ## What Antideploy does not do yet
 
 <Warning>
-No object storage, custom domains, background workers, cron jobs, staging
-environments, or horizontal scaling. Each app runs on a single instance that
-scales to zero.
+No object storage, no domains of your own, no long-running background workers,
+no staging environments, and no horizontal scaling. Each app runs on a single
+instance that scales to zero.
+
+Scheduled jobs are the exception: cron is supported, up to three jobs per app,
+with a five minute minimum interval.
 
 Antideploy detects when your project needs one of these and tells you at
 analysis time, before you deploy, not after.

@@ -67,7 +67,7 @@ page is what happens at each stage.
     The image is deployed and your environment variables are injected. The
     previous version keeps serving until the new one passes its health check.
 
-    Your app is then reachable over HTTPS at a generated URL.
+    Your app is then reachable over HTTPS at its own address on `antideploy.com`.
   </Step>
 
   <Step title="Running">
@@ -92,8 +92,8 @@ Analysis produces two kinds of finding, and the difference matters.
 
   <Card title="Hazards" icon="circle-exclamation">
     Things that will not work once deployed. Files written to local disk and
-    lost on restart. Background workers and scheduled jobs that will never
-    run.
+    lost on restart. Background workers and polling loops that will not stay
+    alive on a container that sleeps.
   </Card>
 </CardGroup>
 

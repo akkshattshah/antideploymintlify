@@ -90,8 +90,10 @@ The most expensive category, because nothing reported an error.
   saved to disk survive until the next deploy and no longer.
 * **In-memory state is not shared and does not survive.** Sessions in memory,
   in-process caches, and rate limit counters reset on every restart.
-* **Background workers and scheduled jobs do not start** because you deployed a
-  web service.
+* **Background workers and polling loops do not stay running** because you
+  deployed a web service that sleeps when nothing is calling it. If you needed
+  something to happen on a schedule, add a cron job instead; if you were polling
+  an external API for updates, take its webhook instead.
 * **A webhook cannot reach you** if you never told the sender the new URL.
 
 <Warning>

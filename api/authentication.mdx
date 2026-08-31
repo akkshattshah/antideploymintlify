@@ -78,7 +78,7 @@ an application id.
 
 An account token represents you rather than a project, which is what lets an
 agent create an application and deploy to it unattended. You get one by
-approving a browser prompt once — see [Terminal login](/api/terminal-login) for
+approving a browser prompt once. See [Terminal login](/api/terminal-login) for
 the full flow.
 
 ### What an account token can do
@@ -118,7 +118,7 @@ to revoke a terminal login. Either stops working immediately; revocation is
 checked on every request, not cached.
 
 Both are browser actions. Neither credential can revoke anything over the API,
-including itself — otherwise a stolen one could withdraw the legitimate
+including itself, because otherwise a stolen one could withdraw the legitimate
 credentials and leave only the thief holding a working key.
 
 Revoke rather than delete: the row is kept so `Last used` remains visible,

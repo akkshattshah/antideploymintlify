@@ -12,8 +12,9 @@ short, and knowing where it ends is more useful than a long one.
 | --- | --- |
 | **Compute** | A container built from your code, running on managed infrastructure. Scales to zero when idle. |
 | **PostgreSQL** | A managed database, created automatically when your code uses Postgres, with `DATABASE_URL` injected. |
-| **HTTPS** | TLS termination and a generated URL for every app. |
+| **HTTPS** | TLS termination, and an address on `antideploy.com` for every app. |
 | **Configuration** | Environment variables and secrets, encrypted at rest and injected at release. |
+| **Scheduled jobs** | Up to three cron jobs per app. Each calls a path on your own app on a schedule, with a five minute minimum interval. |
 
 <CardGroup cols={2}>
   <Card title="Compute" icon="server" href="/infrastructure/compute">
@@ -35,9 +36,8 @@ supply it and pass credentials as environment variables.
 | --- | --- |
 | **Object storage** | Not provisioned. Files written to local disk are lost on restart or redeploy. Bring an S3-compatible bucket. |
 | **Redis / caching** | Not provisioned. Supply `REDIS_URL`. |
-| **Queues and background workers** | Not run. A worker defined in your project will not start. |
-| **Cron / scheduled jobs** | Not run. Nothing on a schedule will ever fire. |
-| **Custom domains** | Not available. Apps are served on a generated URL. |
+| **Queues and background workers** | Not run. Each app is one HTTP container that sleeps when idle, so a worker or a polling loop defined in your project will not stay alive. Use a scheduled job or a webhook instead. |
+| **Custom domains** | Not available yet. Apps are published at `yourapp.antideploy.com`, not at a domain you own. |
 | **Staging / preview environments** | Not available. One deployed version per project. |
 </Warning>
 

@@ -99,7 +99,9 @@ is worse than one that fails:
 * **Files written to local disk do not persist.** The filesystem is ephemeral
   and there is one instance, so uploads written to disk vanish on the next
   deploy.
-* **Background workers and scheduled jobs** are not started for you.
+* **Background workers are not started for you.** The container sleeps when
+  idle, so a worker or a polling loop will not stay alive. Scheduled work is
+  the exception: cron jobs are supported and call a path on your own app.
 * **A build that succeeds is not an application that works.** Read the warnings
   and hazards, which say which of these apply to your project specifically.
 

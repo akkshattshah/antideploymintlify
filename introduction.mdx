@@ -67,9 +67,12 @@ Being straight about this is more useful than a longer feature list.
 <Warning>
 - **No object storage.** Files written to disk are lost on restart or redeploy.
   Bring your own S3-compatible bucket.
-- **No custom domains.** Apps are served on a generated HTTPS URL.
-- **No background workers or cron.** If your project defines them, Antideploy
-  tells you at analysis time; they will not run.
+- **No domains of your own.** Apps are published at `yourapp.antideploy.com`.
+- **No long-running background workers.** Each app is one HTTP container that
+  sleeps when idle, so a worker or a polling loop will not stay alive.
+  Antideploy tells you at analysis time when your project defines one.
+- **Cron is supported.** Up to three scheduled jobs per app, five minute
+  minimum interval. Each one calls a path on your own app.
 - **No staging or preview environments.** One deployed version per project.
 - **No horizontal scaling.** Each app runs on a single instance that scales to
   zero when idle.

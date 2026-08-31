@@ -61,9 +61,10 @@ load balancer, and not an autoscaling group. That has real consequences:
   configuration you can raise.
 </Warning>
 
-**Also not provided:** background workers, scheduled jobs, persistent disk, or
+**Also not provided:** long-running background workers, persistent disk, or
 databases other than Postgres. Those are all things an orchestrator would let
-you run and this does not.
+you run and this does not. Scheduled jobs are provided, with a five minute
+minimum interval.
 
 ## The middle ground most people are in
 
