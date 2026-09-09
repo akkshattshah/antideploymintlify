@@ -64,6 +64,12 @@
               "guides/do-i-need-kubernetes",
               "guides/cloud-run-the-hard-way"
             ]
+          },
+          {
+            "group": "Account",
+            "pages": [
+              "referrals"
+            ]
           }
         ]
       },
