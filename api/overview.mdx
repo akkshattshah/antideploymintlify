@@ -104,10 +104,11 @@ a `documentation` URL pointing back at the contract.
 | --- | --- |
 | 400 | `empty`, `bad_request`, `bad_archive`, `paths_mismatch`, `too_large`, `application_required` |
 | 401 | `unauthorized` |
-| 403 | `account_token_required` |
+| 403 | `account_token_required`, `account_suspended` |
 | 404 | `not_found` |
 | 409 | `deploy_in_progress`, `name_taken` |
 | 429 | `rate_limited`, `limit_exceeded` |
+| 503 | `hosting_paused`, `uploads_paused` |
 
 Match on `code`, not on the message text.
 

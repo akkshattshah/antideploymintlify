@@ -141,8 +141,11 @@ wrong.
 | 400 | `paths_mismatch` | `files` and `paths` counts differ. |
 | 400 | `too_large` | Over the size or file-count limit. |
 | 401 | `unauthorized` | Unknown or revoked key. |
+| 403 | `account_suspended` | The account is suspended. Waiting does not clear it; do not retry. |
 | 409 | `deploy_in_progress` | One deploy at a time per application. Includes the running `taskId`. |
 | 429 | `rate_limited` | Over 20 deploys in an hour. |
+| 503 | `hosting_paused` | Deploys are paused platform-wide for a while. Retry after `retryAfterSeconds`. |
+| 503 | `uploads_paused` | Pushed folders cannot be stored right now. Retry after `retryAfterSeconds`. |
 
 Every error includes a `documentation` URL.
 

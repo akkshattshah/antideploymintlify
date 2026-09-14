@@ -1,0 +1,95 @@
+---
+title: "AI API keys"
+description: "One key for hundreds of AI models, paid from a prepaid wallet. Keys are issued by OpenRouter."
+---
+
+An AI API key lets your app call models from OpenAI, Anthropic, Google, Meta and
+more with a single key. Keys are issued by [OpenRouter](https://openrouter.ai),
+our AI provider, and paid for from your prepaid AI wallet. No OpenRouter account
+or foreign card needed.
+
+## Add money
+
+Open the account menu at the bottom of the sidebar, choose **Settings**, then
+**Billing**. The **AI wallet** is there.
+
+| | |
+| --- | --- |
+| **Per top-up** | ₹100 to ₹10,000 |
+| **Per day** | Up to ₹1,000 during a wallet's first 7 days, then up to ₹20,000 |
+| **Pricing** | OpenRouter's price for the model, at ₹99 per US dollar, fees included |
+| **Expiry** | Wallet money doesn't expire |
+
+The wallet is prepaid. When the balance runs out, your keys stop working until
+you add more, and nothing is ever charged afterwards.
+
+<Warning>
+Top-ups are non-refundable, including any balance you haven't used, except
+where the law requires a refund. See section 8 of the
+[Terms of Service](https://antideploy.com/terms#cancel).
+</Warning>
+
+## Create a key
+
+Click **API keys** in the sidebar, give the key a name, and click **Create key**.
+
+- **Add it to an app**, and we save the key into that app's environment as
+  `OPENROUTER_API_KEY`. Redeploy the app and it can use it, with nothing to copy.
+- **Don't add it to an app**, and the key is shown once in a popup. Copy it then:
+  we don't store it and can't show it again.
+
+## Use a key
+
+Any OpenAI-compatible client works. Point it at OpenRouter's base URL and pick a
+model by its OpenRouter id:
+
+```js
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+const reply = await client.chat.completions.create({
+  model: "openai/gpt-4o-mini",
+  messages: [{ role: "user", content: "Hello" }],
+});
+```
+
+Your app talks to OpenRouter directly. We never see what it sends to the models
+or what comes back; OpenRouter only tells us how much each key spent.
+
+## How spending limits work
+
+All of your keys share your wallet, and together they can never spend more than
+it holds. Once a minute, the balance is split across your keys, weighted
+towards the ones you're actively using.
+
+If a key gets a `403 Key limit exceeded` while your wallet still has money, it
+usually needs a minute for its share to catch up. A busy app does best with one
+key rather than several.
+
+## Paused keys
+
+We may pause every AI key for a safety check, for example if spending suddenly
+rises sharply. While paused, keys don't work and no new keys or top-ups can be
+made. Your balance is kept.
+
+## Revoke a key
+
+Click **Revoke** next to it in the list. It stops working immediately. If it was
+saved into an app, the variable stays in that app's environment but no longer
+works.
+
+## From an agent
+
+| Method | Path | What it does |
+| --- | --- | --- |
+| `GET` | `/api/v1/ai` | Wallet balance, pricing, whether keys are paused, and your keys |
+| `POST` | `/api/v1/ai/keys` | Create a key. Body: `{"name": "chatbot", "applicationId": "<optional>"}` |
+| `DELETE` | `/api/v1/ai/keys/{id}` | Revoke a key |
+
+The secret is returned only in the `POST` response. A project key can only create
+keys for its own application. Agents can't add money: if the wallet is empty,
+give the user the `topUpUrl` from `GET /api/v1/ai` and wait for them.

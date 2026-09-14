@@ -68,7 +68,10 @@
           {
             "group": "Account",
             "pages": [
-              "referrals"
+              "sign-in",
+              "ai-api-keys",
+              "referrals",
+              "acceptable-use"
             ]
           }
         ]

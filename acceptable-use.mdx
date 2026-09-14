@@ -1,0 +1,61 @@
+---
+title: "What you can't deploy"
+description: "The few things Antideploy won't host, how we check for them, and what happens if a project is refused."
+---
+
+Antideploy runs almost any web app, API or site. A short list of things it
+won't run, because they put the platform, and everyone else's apps on it, at
+risk.
+
+## Not allowed
+
+- **Cryptocurrency mining**, of any kind. That includes mining started from
+  inside a desktop, virtual machine or container your app runs, and any
+  connection to a mining pool.
+- **Remote desktops**: VNC, RDP or browser-based desktop environments, or
+  anything else that turns an app into a general-purpose computer.
+- **Remote shells and tunnels**: web terminals, SSH exposed to the internet,
+  or tunnelling tools such as ngrok, tmate or sshx.
+- **Open proxies and VPNs** that relay other people's internet traffic.
+- **Malware, phishing, spam**, attacks on other systems, and anything unlawful.
+
+The full list is in section 5 of the [Terms of Service](https://antideploy.com/terms#acceptable).
+
+## How we check
+
+**Before we build.** We read the files that say what gets built and run
+(your `Dockerfile`, compose files, `Procfile`, and the start and install
+scripts in `package.json`) and the names of the files you deploy. If they
+contain a miner, a remote desktop or a remote shell, the project is refused
+before anything builds. We don't flag an app just for mentioning these words
+in its own code, so a crypto price tracker is fine.
+
+**New accounts.** Deploying your own `Dockerfile` becomes available once your
+account is 24 hours old, or 7 days old if you signed up with only an email
+address. While your app runs on our second hosting provider, its own
+`Dockerfile` needs an account at least 7 days old. Everything else, including
+every framework we detect automatically, works from your first minute.
+
+**While it runs.** We watch how much compute each app uses. An app that keeps
+its processor fully busy for a long stretch may be stopped automatically while
+we look into it.
+
+## If your project is refused
+
+You'll see a message that starts with **"Antideploy doesn't host"** and names
+the file and the text that matched. Remove that part of the project and deploy
+again.
+
+<Note>
+Think it's a false alarm? Email [antideploy@gmail.com](mailto:antideploy@gmail.com)
+with the project name and what it does. Pattern checks can be wrong, and we'd
+rather hear about it than have you stuck.
+</Note>
+
+## Suspension
+
+Mining, remote desktops, remote shells and attacks are stopped immediately and
+without notice. The account is suspended, its apps are deleted, and we may
+refuse future sign-ups from the same GitHub account, Google account or email
+address. A suspended account can't sign in, use its API keys or tokens, or
+deploy.
