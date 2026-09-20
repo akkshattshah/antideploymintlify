@@ -96,13 +96,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@antideploy.io"
+        "href": "mailto:support@antideploy.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "href": "https://app.antideploy.io"
+      "href": "https://antideploy.com/login"
     }
   },
   "footer": {
