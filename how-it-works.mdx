@@ -64,8 +64,11 @@ page is what happens at each stage.
   </Step>
 
   <Step title="Release">
-    The image is deployed and your environment variables are injected. The
-    previous version keeps serving until the new one passes its health check.
+    The image replaces the previous version on your app's single instance, and
+    your environment variables are injected. The deploy counts as live only once
+    the app answers on its port. If it never does, the deploy fails, and since
+    the previous version has already been replaced, recovering means deploying a
+    version that starts.
 
     Your app is then reachable over HTTPS at its own address on `antideploy.com`.
   </Step>

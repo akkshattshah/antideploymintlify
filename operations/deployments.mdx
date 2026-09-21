@@ -1,11 +1,11 @@
 ---
-title: "Deployment History and Rollback"
+title: "Deployment History"
 sidebarTitle: "Deployments"
-description: "Every release is recorded, and any previous one that produced an image can be restored without a rebuild."
+description: "Every release is recorded with its status, the commit it built and why it failed. What a release replaces, and how to undo one."
 ---
 
 Every deploy is recorded against the application: what it built, how it ended,
-and the image it produced. That last part is what makes rollback instant.
+and, when it failed, why.
 
 ## Deployment history
 
@@ -21,53 +21,44 @@ built.
 | **Building**   | Source is being packaged and built into a container image.              |
 | **Deploying**  | The image is built; the database, migrations and release are running.   |
 | **Live**       | Serving traffic.                                                        |
-| **Failed**     | It did not finish. The previous version is still serving.               |
+| **Failed**     | It did not finish. Whether the previous version is still serving depends on where it stopped: see below. |
 
 A failed deploy carries its reason, and where the failure happened during the
 build, the build log with it. Where the container built but would not start,
 the failure shows what the container printed on its way out.
 
-## Rolling back
+## How a release happens
 
-Any earlier deployment that produced an image can be restored. Antideploy
-points the service back at that image; there is no rebuild, so it takes about
-as long as a release rather than a full deploy.
+Each app runs on a single instance, and a release replaces the version on it.
+There is a short gap while the new version starts, and the deploy only counts
+as live once the app answers on its port.
 
-<Steps>
-  <Step title="Open Deployments">
-    Go to the **Deployments** section of your app.
-  </Step>
-  <Step title="Choose the release">
-    Find the deployment you want back. Rows that can be restored show a **Roll
-    back** button; the currently live one does not.
-  </Step>
-  <Step title="Roll back">
-    Click it. The service is re-pointed at that deployment's image and a new
-    entry is recorded.
-  </Step>
-</Steps>
+That ordering decides what a failure leaves behind:
 
-<Warning>
-  Rollback restores your **application code only**. It does not reverse database
-  migrations.
+| Where it failed | What is serving afterwards |
+| --- | --- |
+| Analysis, build, or database migration | The previous version, untouched |
+| Release, or the health check after it | Nothing working, because the new version had already replaced the old one |
 
-  If the release you are rolling back from changed your schema, check that the
-  older code can still run against it. The safest pattern is additive
-  migrations that both versions tolerate.
-</Warning>
-
-## Zero-downtime releases
-
-The running version keeps serving until the new one has been built and has
-passed its health check. If the new version fails to start, the old one is left
-in place and the deploy is marked failed; you do not get a window where
-neither is up.
+Migrations run before the release, so a failed migration always leaves your old
+version serving. A version that builds but then crashes on start, or listens on
+the wrong port, does not: fix it or put the previous code back, and deploy.
 
 <Note>
   Because each app runs on at most one instance, there is no percentage-based
   rollout, no canary, and no way to have two versions serving at once. The
   cutover is a switch, not a gradual shift.
 </Note>
+
+## Undoing a deploy
+
+**There is no one-click rollback today.** Deploys on our current hosting do not
+keep a build that can be released again. To undo a deploy, put the code back to
+the last version that worked and deploy it: a `git revert` and push, your agent
+restoring the previous version, or an upload of the last working folder.
+
+Undoing code does not undo a database migration. [Undo a bad
+deploy](/guides/roll-back-a-bad-deploy) walks through both.
 
 There is no deployment configuration file. Build and start commands come from
 analysis of your code, and the release behaviour above is not configurable.

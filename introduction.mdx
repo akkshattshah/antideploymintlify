@@ -46,9 +46,9 @@ depends on, how to build it, and how to start it.
   </Step>
 
   <Step title="Release">
-    The container is deployed and given an HTTPS URL. Environment variables
-    are injected at this point. The previous version keeps serving until the
-    new one reports healthy.
+    The container replaces the previous version and is given an HTTPS URL.
+    Environment variables are injected at this point, and the deploy counts as
+    live only once the new version answers.
   </Step>
 </Steps>
 
@@ -90,7 +90,7 @@ rather than letting you discover them in production.
   </Card>
 
   <Card title="Deployments" icon="clock-rotate-left" href="/operations/deployments">
-    Full history, with one-click rollback to any previous release.
+    Full history of every release, with the commit each GitHub deploy built.
   </Card>
 
   <Card title="Monitoring" icon="heart-pulse" href="/operations/monitoring">

@@ -1,84 +1,88 @@
 ---
-title: "Roll Back a Bad Deploy"
-sidebarTitle: "Rolling back"
-description: "Getting back to the version that worked, in about forty seconds, without rebuilding anything and without your database going with it."
+title: "Undo a Bad Deploy"
+sidebarTitle: "Undoing a deploy"
+description: "There is no one-click rollback today. How to get back to the version that worked, what a failed deploy leaves running, and why undoing code does not undo a migration."
 ---
 
-**Pick a previous deployment and release it.** It takes about forty seconds,
-because nothing is rebuilt. The image already exists.
+**There is no one-click rollback today.** Deploys on our current hosting do not
+keep a build that can be released again, so there is nothing to switch back to.
+To undo a deploy, put the code back to the last version that worked and deploy
+that.
 
-## Why it is fast
+It is a full deploy, not an instant switch, so it takes as long as your normal
+deploys do: minutes, not seconds. Worth knowing before the moment you need it.
 
-Every deployment keeps the image it produced. Rolling back points the service
-back at one of those images, so the work is a release rather than a build.
+## How to put the previous version back
 
-| | Time |
+The **Deployments** tab lists every deploy with its status and, for deploys
+from GitHub, the commit it built. That tells you which version to go back to.
+
+<Tabs>
+  <Tab title="GitHub">
+    Revert the commit that broke things and push:
+
+    ```bash
+    git revert <bad-commit-sha>
+    git push
+    ```
+
+    With deploy on push turned on, the push is the deploy. `git revert` adds a
+    new commit that undoes the old one, which is safer than rewriting history
+    on a branch other people use.
+  </Tab>
+  <Tab title="Coding agent">
+    Tell your agent which version was the last good one and ask it to restore
+    that code and deploy it. The agent can read the deployment history to find
+    the commit.
+  </Tab>
+  <Tab title="Folder upload">
+    Upload the last working copy of the folder. If you do not keep one, this is
+    the strongest reason to put the project in Git.
+  </Tab>
+</Tabs>
+
+## What a failed deploy leaves running
+
+This depends on where the deploy stopped, and it is the part most worth
+understanding in advance.
+
+| Where it failed | What is serving afterwards |
 | --- | --- |
-| Roll back to an existing image | ~40 seconds |
-| Rebuild from source | Minutes |
+| Analysis, build, or database migration | **The previous version, untouched.** Nothing was released |
+| Release: the new version did not start | **Nothing working.** The new version had already replaced the old one |
+| Health check: it started but never answered on its port | **Nothing working**, for the same reason |
 
-The difference matters at the moment you need it. Reverting a commit and waiting
-for a full build is the same three minutes you did not have when you noticed the
-problem.
+The first row is the common case: a build error or a failed migration, and your
+app keeps running as it was. The other two happen after the new version has
+taken the old one's place, because each app runs on a single instance and a
+release replaces it. The app stays down until a version that starts is
+deployed, which is either a fix or the previous code put back as above.
 
-<Steps>
-  <Step title="Open the application's deployments">
-    Every deploy is listed with its status, when it ran, and, when it came from
-    GitHub, the commit it built.
-  </Step>
-  <Step title="Choose the one that worked">
-    Usually the one before the one you just shipped.
-  </Step>
-  <Step title="Release it">
-    The service is pointed back at that image. No rebuild, no queue.
-  </Step>
-</Steps>
+## Undoing code does not undo a migration
 
-## What rolls back, and what does not
-
-This is the part worth understanding before you need it.
-
-| | Rolls back |
-| --- | --- |
-| Your application code | Yes, to exactly the image that ran before |
-| Your environment variables | No, the current values are used |
-| **Your database schema** | **No** |
-| Your database contents | No |
-
-**A rollback is not a migration rollback.** If the deploy you are reverting
-added a column, dropped a table, or rewrote data, the old code is now running
-against the new schema. Sometimes that is fine, because the old code simply does
-not know about the new column. Sometimes it is not, because the old code selects
-a column your migration renamed.
+**Putting old code back does not reverse a database migration.** If the deploy
+you are undoing added a column, dropped a table, or rewrote data, the old code
+now runs against the new schema. Sometimes that is fine, because the old code
+simply does not know about the new column. Sometimes it is not, because the old
+code selects a column the migration renamed.
 
 <Warning>
-  Before rolling back past a migration, know what the migration did. Reverting
-  application code is instant and safe. Reverting a schema is neither, and no
-  platform can do it for you without risking your data.
+  Before putting code back past a migration, know what the migration did.
+  Redeploying old application code is safe. Reverting a schema is not, and no
+  platform can do it for you without risking your data. The pattern that avoids
+  the problem is additive migrations that both the old and new code tolerate.
 </Warning>
-
-## A failed deploy does not need a rollback
-
-Worth saying, because it is the more common case.
-
-If a deploy fails, the previous version stays up. The new version is not
-released and then reverted; it never takes traffic at all. Migrations run before
-the release, so a failed migration fails the deploy with your old version still
-serving.
-
-You only need a rollback when a deploy **succeeded** and the result is wrong.
-That is a different situation from a build error, and it is the one to plan for.
 
 ## Deciding quickly
 
-When something is wrong in production, the useful question is not what broke, it
-is whether the previous version was fine. If it was, roll back first and
-diagnose after. Forty seconds of stale code beats twenty minutes of debugging
-under pressure.
+When something is wrong in production, the useful question is not what broke,
+it is whether the previous version was fine. If it was, put it back first and
+diagnose after. A few minutes of redeploying the old code beats twenty minutes
+of debugging under pressure.
 
-The deployment list gives you the commit each image was built from, so the diff
-between what works and what does not is one comparison away once you are no
-longer on fire.
+Once you are no longer on fire, the deployment list gives you the commit each
+deploy built, so the difference between what worked and what did not is one
+comparison away.
 
 <Card title="Health and alerts" icon="heart-pulse" href="/operations/monitoring">
   Health checks run every few minutes, and you are emailed when an application
