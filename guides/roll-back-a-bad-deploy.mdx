@@ -1,21 +1,30 @@
 ---
 title: "Undo a Bad Deploy"
 sidebarTitle: "Undoing a deploy"
-description: "There is no one-click rollback today. How to get back to the version that worked, what a failed deploy leaves running, and why undoing code does not undo a migration."
+description: "How to roll back to the version that worked, what a failed deploy leaves running, and why undoing code does not undo a migration."
 ---
 
-**There is no one-click rollback today.** Deploys on our current hosting do not
-keep a build that can be released again, so there is nothing to switch back to.
-To undo a deploy, put the code back to the last version that worked and deploy
-that.
+**You can roll back, and it takes as long as a deploy.** Antideploy puts back
+the last version that went live before the one serving now, by building it
+again from its source. It is a rebuild, not an instant switch, so it takes as
+long as your normal deploys do: minutes, not seconds. It is checked and counted
+like any other deploy. Worth knowing before the moment you need it.
 
-It is a full deploy, not an instant switch, so it takes as long as your normal
-deploys do: minutes, not seconds. Worth knowing before the moment you need it.
-
-## How to put the previous version back
+## How to roll back
 
 The **Deployments** tab lists every deploy with its status and, for deploys
-from GitHub, the commit it built. That tells you which version to go back to.
+from GitHub, the commit it built. Choose **Roll back** next to an earlier
+version that went live to return to it, or use the **Roll back** button on the
+app's page to return to the last version before the current one.
+
+Your coding agent can do the same with `POST /api/v1/rollback`, which takes the
+application and, optionally, the deployment to return to. A deploy that is
+already running has to finish first.
+
+## Or put the code back yourself
+
+Rolling back builds an old version again. You can also put the old code back
+and deploy it like any other change.
 
 <Tabs>
   <Tab title="GitHub">

@@ -35,8 +35,11 @@ depends on, how to build it, and how to start it.
 
   <Step title="Provisioning">
     If your code uses Postgres, a database is created and its connection
-    string is injected as `DATABASE_URL`. This is the only infrastructure
-    Antideploy provisions today.
+    string is injected as `DATABASE_URL`. A project that uses an S3 client
+    gets a private bucket for its files, and your coding agent can also switch
+    on sign-in for your app's users and email for your app. Each one is wired
+    into the environment for you. The
+    [platform overview](https://antideploy.com/platform) lists every service.
   </Step>
 
   <Step title="Build">
@@ -57,6 +60,9 @@ depends on, how to build it, and how to start it.
 - **Containers.** No Dockerfile unless you want one; if you have one, it's used.
 - **Build and start commands.** Inferred from your project, and shown to you.
 - **Postgres.** Created and wired up when your code needs it.
+- **Files, sign-in and email.** A private S3-compatible bucket, sign-up and
+  sign-in for your users, and email sending are created for the app and wired
+  into its environment.
 - **TLS.** Every app gets HTTPS.
 - **Idle cost.** Apps scale to zero and cost nothing while nobody is using them.
 
@@ -65,9 +71,10 @@ depends on, how to build it, and how to start it.
 Being straight about this is more useful than a longer feature list.
 
 <Warning>
-- **No object storage.** Files written to disk are lost on restart or redeploy.
-  Bring your own S3-compatible bucket.
-- **No domains of your own.** Apps are published at `yourapp.antideploy.com`.
+- **Files written to disk are lost on restart or redeploy.** Keep uploads in
+  the private S3-compatible bucket Antideploy creates for the app.
+- **Custom domains start on the Go plan.** On the Free plan, an app is
+  published only at its Antideploy address.
 - **No long-running background workers.** Each app is one HTTP container that
   sleeps when idle, so a worker or a polling loop will not stay alive.
   Antideploy tells you at analysis time when your project defines one.
@@ -76,7 +83,8 @@ Being straight about this is more useful than a longer feature list.
 - **No staging or preview environments.** One deployed version per project.
 - **No horizontal scaling.** Each app runs on a single instance that scales to
   zero when idle.
-- **No Redis or caching layer.** Supply your own `REDIS_URL`.
+- **No Redis, MySQL or MongoDB.** Supply your own, with its credentials as
+  environment variables.
 </Warning>
 
 Antideploy raises these as **hazards** during analysis, before you deploy,

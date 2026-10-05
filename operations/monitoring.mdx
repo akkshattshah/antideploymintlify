@@ -1,24 +1,24 @@
 ---
-title: "Health Checks and Downtime Email"
+title: "Health Checks, Metrics and Downtime Email"
 sidebarTitle: "Monitoring"
-description: "Antideploy checks every deployed app every few minutes and emails you when one goes down or recovers."
+description: "Antideploy checks every deployed app about every five minutes, emails you when one goes down or recovers, and reports its requests, errors and response times."
 ---
 
-Antideploy watches whether your app is up. It does not collect metrics, and
-there is no metrics dashboard; knowing that is more useful than discovering it
-during an incident.
+Antideploy watches whether your app is up and how it is doing: whether it is
+running, how many requests it served, how many failed and how fast it answered.
+You and your coding agent read the same things.
 
 ## What is checked
 
-Every few minutes, Antideploy sweeps every application that has a live
+About every five minutes, Antideploy sweeps every application that has a live
 deployment and records one of four states.
 
 | State        | What it means                                                            |
 | ------------ | ------------------------------------------------------------------------ |
-| **Healthy**  | The service is ready and not returning an unusual number of errors.      |
-| **Degraded** | The service is running, but three or more requests returned a 5xx in the last fifteen minutes. |
-| **Down**     | The service is not ready: it failed to start, or the revision is broken. |
-| **Unknown**  | We could not reach the platform to ask.                                  |
+| **Healthy**  | Running, or asleep until the next visit.                                 |
+| **Degraded** | Running again, but it crashed in the last 15 minutes.                    |
+| **Down**     | It stopped by itself, on two checks in a row.                            |
+| **Unknown**  | We could not check just now.                                             |
 
 The state appears on your application in the dashboard. Without this check the
 dashboard would report whatever was true at deploy time: an app that died an
@@ -27,8 +27,14 @@ hour ago would still show a green badge, which is worse than showing nothing.
 <Note>
   A single bad reading is not an outage. An app must fail two consecutive checks
   before it is reported as down, so a momentary blip in the underlying platform
-  does not page you.
+  does not page you. An app that is asleep is healthy: the next visit starts it.
 </Note>
+
+The check looks at whether your app is running, crashing or out of memory. It
+does not load your pages, so a running app that serves errors is something to
+find in the metrics and the logs. Health is also the last reading from a sweep,
+not a probe taken at the moment you look: compare when it was last checked with
+when you deployed before you conclude anything.
 
 ## Email notifications
 
@@ -36,23 +42,30 @@ You are emailed when an application **changes state**: when it goes down, and
 again when it recovers. You are not emailed on every check, and there is no
 digest.
 
-Deploy failures are emailed separately, with the build log, at the moment the
+Deploy failures are emailed separately, with the reason, at the moment the
 deploy fails.
+
+## Traffic metrics
+
+Antideploy keeps the traffic your app served: requests, server errors and the
+error rate, the median and 95th percentile response times in milliseconds, and
+requests per day. They cover up to 30 days, 7 by default. Your agent reads them
+with `GET /api/v1/metrics` when you say the site is slow or failing: logs show
+what happened, metrics show how often.
+
+Requests count everything that reached the app, bots and each asset on a page
+included, so they are not a count of visitors.
 
 ## What is not collected
 
 <Warning>
-  Antideploy does not collect or display request rate, latency, error
-  percentages, CPU, memory, or database connection counts. There is no metrics
-  tab, no charts, and no alert rules to configure.
+  Antideploy does not collect CPU, memory or database connection counts, and
+  there are no alert rules to configure. The only alerts are the down,
+  recovered and deploy-failed emails.
 
-  If you need application metrics, instrument your app and send them to a
-  service you control; the credentials go in your environment variables like
-  any other.
+  If you need more, instrument your app and send the data to a service you
+  control; the credentials go in your environment variables like any other.
 </Warning>
-
-The one signal Antideploy does derive from traffic is the 5xx count behind the
-**Degraded** state above, and it is not exposed as a metric you can query.
 
 <Card title="Logs" icon="file-lines" href="/operations/logs">
   Reading what your application actually printed.

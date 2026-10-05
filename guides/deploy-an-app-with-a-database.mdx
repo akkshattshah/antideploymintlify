@@ -83,9 +83,9 @@ client or opening a tunnel.
   databases.
 * **No automatic point-in-time restore.** If you need a copy of your data, take
   one with `pg_dump` before deleting an application.
-* **Postgres only.** MySQL, MongoDB and Redis are not provisioned. You can still
-  use them if they already exist somewhere: put the credentials in your
-  environment variables and your app will pick them up.
+* **Postgres is the only database.** MySQL, MongoDB and Redis are not
+  provisioned. You can still use them if they already exist somewhere: put the
+  credentials in your environment variables and your app will pick them up.
 
 ## If your app crashes on the first request
 

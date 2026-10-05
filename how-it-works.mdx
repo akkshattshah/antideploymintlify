@@ -37,9 +37,11 @@ page is what happens at each stage.
     If your code uses Postgres, a database is created and its connection
     string is injected as `DATABASE_URL`.
 
-    This is the only infrastructure Antideploy provisions. If your project
-    also needs object storage, Redis, a queue or a scheduler, analysis will
-    say so, as a warning or a hazard, and you supply it yourself.
+    A project that uses an S3 client also gets a private bucket for its
+    files, and your coding agent can switch on sign-in and email for the app.
+    If your project needs Redis, MySQL, MongoDB, a queue or a scheduler that
+    runs inside the app, analysis will say so, as a warning or a hazard, and
+    you supply it yourself.
   </Step>
 
   <Step title="Build">
@@ -70,7 +72,7 @@ page is what happens at each stage.
     the previous version has already been replaced, recovering means deploying a
     version that starts.
 
-    Your app is then reachable over HTTPS at its own address on `antideploy.com`.
+    Your app is then reachable over HTTPS at its own address on Antideploy.
   </Step>
 
   <Step title="Running">

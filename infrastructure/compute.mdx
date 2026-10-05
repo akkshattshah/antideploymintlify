@@ -14,9 +14,10 @@ Each app runs with:
 | --- | --- |
 | CPU | 1 vCPU |
 | Memory | 1 GiB |
-| Request timeout | 300 seconds |
 
-These are fixed today and not configurable from the dashboard.
+These are fixed today and not configurable from the dashboard. Antideploy sets
+no time limit of its own on a request or a connection. Cloudflare sits in front
+of every app and applies its own limits, such as a 100 MB request body.
 
 ## Scale to zero
 
@@ -25,8 +26,9 @@ while idle.
 
 <Note>
 The trade-off is cold starts. The first request after an idle period has to
-start a container before it can be served, which typically adds a second or
-two. Subsequent requests hit the warm instance.
+start a container before it can be served. In our measurements that took 2.9 to
+13.9 seconds, depending on the stack. Subsequent requests hit the warm
+instance.
 </Note>
 
 ## Single instance
@@ -51,8 +53,8 @@ around.
 
 ## Region
 
-Apps run in a single region, chosen to sit close to the database. Region
-selection is not exposed.
+Apps run in one region, Singapore, with the database beside the app. Choosing
+a region is not offered today.
 
 ## Builds
 

@@ -61,10 +61,10 @@ load balancer, and not an autoscaling group. That has real consequences:
   configuration you can raise.
 </Warning>
 
-**Also not provided:** long-running background workers, persistent disk, or
-databases other than Postgres. Those are all things an orchestrator would let
-you run and this does not. Scheduled jobs are provided, with a five minute
-minimum interval.
+**Also not provided:** long-running background workers, persistent disk (files
+go in a private S3 bucket instead), or databases other than Postgres. Those are
+all things an orchestrator would let you run and this does not. Scheduled jobs
+are provided, with a five minute minimum interval.
 
 ## The middle ground most people are in
 
@@ -78,7 +78,7 @@ this platform is built around:
 * Getting the container built without maintaining a Dockerfile.
 * Getting migrations to run **before** the app starts rather than after it has
   crashed.
-* Getting back to the version that worked, in seconds, when one does not.
+* Getting back to the version that worked when one does not.
 * Finding out an application went down without discovering it from a customer.
 
 Kubernetes does not solve any of those for you. It gives you the primitives to

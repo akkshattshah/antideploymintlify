@@ -87,9 +87,9 @@ is in that conversation's transcript for good, and the agent does not need it.
 ## What Antideploy does not do yet
 
 <Warning>
-No object storage, no domains of your own, no long-running background workers,
-no staging environments, and no horizontal scaling. Each app runs on a single
-instance that scales to zero.
+No Redis, MySQL or MongoDB, no long-running background workers, no staging
+environments, and no horizontal scaling. Each app runs on a single instance
+that scales to zero. Custom domains start on the Go plan.
 
 Scheduled jobs are the exception: cron is supported, up to three jobs per app,
 with a five minute minimum interval.

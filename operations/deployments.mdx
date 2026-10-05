@@ -52,10 +52,12 @@ the wrong port, does not: fix it or put the previous code back, and deploy.
 
 ## Undoing a deploy
 
-**There is no one-click rollback today.** Deploys on our current hosting do not
-keep a build that can be released again. To undo a deploy, put the code back to
-the last version that worked and deploy it: a `git revert` and push, your agent
-restoring the previous version, or an upload of the last working folder.
+**Roll back from the Deployments tab, or have your agent do it.** The last
+version that went live before the one serving now is built again from its
+source, so it takes as long as a normal deploy: it is a rebuild, not an instant
+switch, and it is checked and counted like any other deploy. You can also put
+the code back yourself: a `git revert` and push, your agent restoring the
+previous version, or an upload of the last working folder.
 
 Undoing code does not undo a database migration. [Undo a bad
 deploy](/guides/roll-back-a-bad-deploy) walks through both.
