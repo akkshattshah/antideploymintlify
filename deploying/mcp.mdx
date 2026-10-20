@@ -144,7 +144,7 @@ Your login is saved in `~/.antideploy/config.json`, readable only by you. You ca
 | Storage, sign-in and email for the app | `storage_create`, `auth_create`, `email_create` and their `*_env_to_file` and email management tools |
 | Checks | `security_scan`, `security_scan_status` |
 
-Deploys are asynchronous. `deploy` returns a task id, and the agent polls `deployment_status` until it reads `succeeded` or `failed`. Warnings and hazards in that answer are structured data meant to be read out to you.
+Deploys are asynchronous. `deploy` returns a task id, and the agent calls `deployment_status` until it reads `succeeded` or `failed`. Each call waits up to 20 seconds for the deploy to finish, so it does not need to poll in a loop; a first deploy usually takes one to three minutes. Warnings and hazards in that answer are structured data meant to be read out to you.
 
 Deleting an application or its database, custom domains and billing are not offered to agents. You do those in the [dashboard](https://antideploy.com/console).
 
