@@ -160,6 +160,7 @@ Deleting an application or its database, custom domains and billing are not offe
 - **A `.env` file is never uploaded.** To store variables from it, the agent calls `set_env_from_file` with the names it needs. It reads the file on your machine and sends only those. It refuses the names the platform sets itself, such as `DATABASE_URL`.
 - **Keys only you have.** The agent calls `request_keys`, which gives you a page on antideploy.com to paste a Stripe key or a bot token into, so the agent never sees it.
 - **A folder is tied to one application.** A folder without `.antideploy.json` is refused, never matched to an application by guesswork.
+- **Only the project folder.** The tools act inside the folder the agent was started in. A folder named in a call must be inside it, a home directory or a drive is refused as a project, and nothing is written through a symbolic link, so an instruction hidden in a repository cannot send another folder to Antideploy.
 
 ## Limits
 
