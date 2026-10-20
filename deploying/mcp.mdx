@@ -1,136 +1,192 @@
 ---
 title: "Deploy from a Coding Agent"
 sidebarTitle: "Coding agent (MCP)"
-description: "Give Claude Code, Cursor, or any MCP client the ability to deploy your project: no browser, no Dockerfile, nothing to configure."
+description: "Give Claude Code, Cursor, Codex or OpenCode the ability to deploy and run your project. Sign in with one link: no key to copy, no dashboard, no GitHub repo."
 ---
 
-Antideploy ships an [MCP](https://modelcontextprotocol.io) server, so the agent
-that wrote your application can also deploy it. You ask for a change, and it
-edits the code, deploys, watches the build, and hands you back a URL.
+Antideploy ships an [MCP](https://modelcontextprotocol.io) server and an agent skill, so the agent that wrote your application can also deploy it. You ask for a change, and it edits the code, deploys, watches the build, and hands you back an address.
 
-It works with Claude Code, Cursor, Windsurf, Codex, and anything else that
-speaks MCP.
-
-## When to use it
-
-* **An agent is doing the work**: you would rather not leave the conversation
-  to ship what it just wrote.
-* **You want the deploy in the loop**: the agent reads the build result and
-  can fix what broke without you relaying it.
-* **Nothing to install**: your agent runs the server with `npx` on demand.
+You do one thing: open a link and click Approve, once per machine.
 
 <Note>
-  These are not exclusive. Connect [GitHub](/deploying/github) later and every
-  push redeploys; use [folder upload](/deploying/upload) when you just want to
-  drag a directory into the dashboard once. An app deployed over MCP can be
-  connected to a repository afterwards without losing anything.
+  No MCP? Paste one sentence into any coding agent that can read a web page and make web requests. It follows [a page that explains every step](https://antideploy.com/agent.md) and does the same work:
+
+  ```text
+  Set this project up to deploy on Antideploy. Fetch https://antideploy.com/agent.md and follow it.
+  ```
 </Note>
 
-## Set it up
+## Install
 
-<Steps>
-  <Step title="Create an application and an API key">
-    Create the application in the dashboard, then create an API key for it.
+The server runs with `npx`, so there is nothing to install by hand. The first start downloads one package of about 250 kB.
 
-    The key identifies the application, so you never pass an application id:
-    one key, one app.
-  </Step>
+<Tabs>
+  <Tab title="Claude Code">
+    The plugin installs the tools and the skill together.
 
-  <Step title="Add the server to your agent">
-    <CodeGroup>
-    ```bash Claude Code
-    claude mcp add antideploy \
-      -e ANTIDEPLOY_API_KEY=ad_your_key \
-      -- npx -y antideploy-mcp
+    ```bash
+    claude plugin marketplace add antideploy/antideploy-mcp
+    claude plugin install antideploy@antideploy
     ```
 
-    ```json mcp.json
+    Start a new session. The plugin asks for nothing.
+
+    To add only the tools:
+
+    ```bash
+    claude mcp add antideploy -- npx -y antideploy-mcp@0.2
+    ```
+  </Tab>
+
+  <Tab title="Cursor">
+    Open this link in a browser, or add the config below to `.cursor/mcp.json` (this project) or `~/.cursor/mcp.json` (every project).
+
+    ```text
+    cursor://anysphere.cursor-deeplink/mcp/install?name=antideploy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImFudGlkZXBsb3ktbWNwQDAuMiJdfQ==
+    ```
+
+    ```json
     {
       "mcpServers": {
         "antideploy": {
+          "type": "stdio",
           "command": "npx",
-          "args": ["-y", "antideploy-mcp"],
-          "env": { "ANTIDEPLOY_API_KEY": "ad_your_key" }
+          "args": ["-y", "antideploy-mcp@0.2"]
         }
       }
     }
     ```
-    </CodeGroup>
+  </Tab>
+
+  <Tab title="Codex">
+    ```bash
+    codex mcp add antideploy -- npx -y antideploy-mcp@0.2
+    ```
+
+    Or add this to `~/.codex/config.toml`. Codex waits 10 seconds for a server to start by default, so raise the timeouts: the first start downloads the package.
+
+    ```toml
+    [mcp_servers.antideploy]
+    command = "npx"
+    args = ["-y", "antideploy-mcp@0.2"]
+    startup_timeout_sec = 60
+    tool_timeout_sec = 120
+    ```
+  </Tab>
+
+  <Tab title="OpenCode">
+    Add this to `opencode.json` in your project, or to `~/.config/opencode/opencode.json` for every project. OpenCode waits 5 seconds for a server's tools by default, so keep the longer `timeout`.
+
+    ```json
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "mcp": {
+        "antideploy": {
+          "type": "local",
+          "command": ["npx", "-y", "antideploy-mcp@0.2"],
+          "enabled": true,
+          "timeout": 60000
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Other clients">
+    Any MCP client that can start a command: run `npx` with the arguments `-y antideploy-mcp@0.2`.
+
+    ```json
+    {
+      "mcpServers": {
+        "antideploy": { "command": "npx", "args": ["-y", "antideploy-mcp@0.2"] }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+The configs pin `antideploy-mcp@0.2`, which takes every 0.2.x fix. To move to a new minor version, change that number.
+
+## The skill
+
+The `antideploy` skill tells the agent when Antideploy fits, how to connect, how to deploy, what to read when something fails, and when to use a different host instead. Claude Code, Cursor, Codex and OpenCode all read the same `SKILL.md` format.
+
+The Claude Code plugin installs it for you. For the others, copy the folder [`skills/antideploy`](https://github.com/antideploy/antideploy-mcp/tree/main/skills/antideploy) from the repository to `.agents/skills/` in your project or `~/.agents/skills/` for every project; Cursor, Codex and OpenCode all look there. Keep the folder name `antideploy`.
+
+## Your first deploy
+
+<Steps>
+  <Step title="Ask for it">
+    In your agent, say what you want, for example **Deploy this project on Antideploy.**
   </Step>
 
-  <Step title="Ask it to deploy">
-    Start a new session so your agent picks up the server, then say **deploy
-    this**. It calls `deploy`, gets a task id back, and polls
-    `deployment_status` until the application is live.
+  <Step title="Approve one link">
+    The agent calls `login` and shows you a link and a short code. Open the link, check that the code matches, and click **Approve**. If you have no account, the same link creates one.
+  </Step>
+
+  <Step title="Let it finish">
+    The agent creates the application for the folder, creates a Postgres database if the project needs one, deploys, and polls until the app is live. It tells you the address and which Antideploy account it went to.
   </Step>
 </Steps>
 
-## The tools
+Your login is saved in `~/.antideploy/config.json`, readable only by you. You can revoke it at any time on the [tokens page](https://antideploy.com/tokens).
 
-| Tool | What it does |
+## What the agent can do
+
+| Group | Tools |
 | --- | --- |
-| `deploy` | Packages the project directory and deploys it. Returns a `taskId`. |
-| `deployment_status` | Progress for one deploy: each step, the detected spec, warnings and hazards. |
-| `list_env` | Environment variable names. Values are never returned. |
-| `set_env` | Store or replace environment variables. |
-| `api_info` | The API's own description of itself. |
+| Sign in | `login`, `logout` |
+| Applications | `list_applications`, `create_application`, `link_application`, `check_address`, `app_settings`, `update_app_settings` |
+| Deploy | `deploy`, `deployment_status`, `redeploy`, `rollback`, `deployment_history` |
+| Variables | `list_env`, `set_env`, `set_env_from_file`, `remove_env`, `request_keys` |
+| Run it | `logs`, `health`, `metrics`, and scheduled jobs |
+| Database | `database_create`, `database_env_to_file`, `database_info` |
+| Storage, sign-in and email for the app | `storage_create`, `auth_create`, `email_create` and their `*_env_to_file` and email management tools |
+| Checks | `security_scan`, `security_scan_status` |
 
-Deploys are asynchronous. `deploy` returns immediately with a `taskId`, and your
-agent polls `deployment_status` until it reads `succeeded` or `failed`. A small
-static site is usually live in about thirty seconds.
+Deploys are asynchronous. `deploy` returns a task id, and the agent polls `deployment_status` until it reads `succeeded` or `failed`. Warnings and hazards in that answer are structured data meant to be read out to you.
 
-<Note>
-  Warnings and hazards in the `deployment_status` response are structured data,
-  meant to be read out to you. A deploy can succeed and still tell you something
-  worth acting on.
-</Note>
+Deleting an application or its database, custom domains and billing are not offered to agents. You do those in the [dashboard](https://antideploy.com/console).
 
-<Warning>
-  The whole directory is sent, not just the entry point. A deploy containing one
-  file builds, starts, and then serves a page whose scripts, styles and images
-  all 404. The MCP server always sends the full tree.
-</Warning>
+## Files, secrets and keys
 
-## What happens to your .env
+| File | What it is | Commit it? |
+| --- | --- | --- |
+| `~/.antideploy/config.json` | Your login. Outside your project | No |
+| `.antideploy.json` | The application this folder belongs to. An id, no secret | Yes |
+| `.env` | Database and other variables, if you asked for them. Added to `.gitignore` before it is written | No |
 
-A `.env` in the project directory **is uploaded**, on purpose. Its values go
-into the encrypted secret store, and the file itself is then dropped from the
-build, so you do not retype nine API keys you already have on disk.
-
-Move the file before deploying if that is not what you want. See
-[secrets](/configuration/secrets) for how values are stored, and
-[environment variables](/configuration/environment-variables) for how they reach
-your application.
-
-## What is excluded automatically
-
-| | |
-| --- | --- |
-| Dependencies | `node_modules`, `vendor`, `.venv`, `venv` |
-| Build output | `dist`, `build`, `out`, `.next`, `.nuxt`, `.svelte-kit`, `target` |
-| Caches | `.turbo`, `.cache`, `.parcel-cache`, `__pycache__`, `.pytest_cache` |
-| Tooling | `.git`, `.idea`, `.vscode`, `.terraform`, `.gradle` |
-| Keys | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa` |
-| Noise | `.DS_Store`, `Thumbs.db`, `desktop.ini` |
+- **Tokens and passwords stay out of the conversation.** The tools that write `.env` answer with the variable names only.
+- **A `.env` file is never uploaded.** To store variables from it, the agent calls `set_env_from_file` with the names it needs. It reads the file on your machine and sends only those. It refuses the names the platform sets itself, such as `DATABASE_URL`.
+- **Keys only you have.** The agent calls `request_keys`, which gives you a page on antideploy.com to paste a Stripe key or a bot token into, so the agent never sees it.
+- **A folder is tied to one application.** A folder without `.antideploy.json` is refused, never matched to an application by guesswork.
 
 ## Limits
 
-| | |
-| --- | --- |
-| Files | 4,000 |
-| Per file | 5 MB |
-| Total upload | 28 MB |
-| Concurrent deploys | 1 per application |
+The tools read the upload limits from the platform when they deploy, so they follow the API contract: currently 4,000 files and 28 MB for a project, and 28 MB for any one file. If a file is over the limit the agent is told which one, before anything uploads. One deploy at a time per application. A larger project can deploy from [GitHub](/deploying/github).
 
-These are checked on your machine before anything uploads, so going over one
-costs you an error rather than a transfer.
+## Update and remove
 
-## Configuration
+In Claude Code:
+
+```bash
+claude plugin update antideploy@antideploy
+claude plugin uninstall antideploy@antideploy
+```
+
+In Cursor, Codex and OpenCode, the config pins the version: change the number to update, and delete the `antideploy` entry (and the skill folder) to remove.
+
+Removing the tools does not log you out. Delete `~/.antideploy/config.json`, or ask the agent to log out. To revoke the login on the server, use the [tokens page](https://antideploy.com/tokens).
+
+## A project key, for a pipeline
+
+For CI or a second machine, create a key for one application in the dashboard and set `ANTIDEPLOY_API_KEY` in the server's environment. The tools then work without `login`, bound to that application. Treat it like a password: it is built to survive being committed, but you should not publish it.
 
 | Variable | |
 | --- | --- |
-| `ANTIDEPLOY_API_KEY` | Required. The key for the application to deploy. |
+| `ANTIDEPLOY_API_KEY` | Optional. A project key for one application. |
 | `ANTIDEPLOY_URL` | Optional. Defaults to `https://antideploy.com`. |
+| `ANTIDEPLOY_PROJECT_DIR` | Optional. The project folder, for a client that starts servers somewhere else. |
 
 ## Compared to the other ways in
 
@@ -141,17 +197,12 @@ costs you an error rather than a transfer.
 | Redeploys on push | No | Yes | No |
 | Leaves the conversation | No | n/a | Yes |
 
+## If something goes wrong
+
+- **The tools do not appear.** Check that the server started: `claude mcp list` in Claude Code, `codex mcp list` in Codex, `opencode mcp list` in OpenCode. The first start needs a moment to download the package, and the server needs outbound HTTPS to antideploy.com.
+- **The agent says it cannot reach antideploy.com.** Its sandbox blocks the domain. Allow it in the agent's network settings, or run the agent on your own machine.
+- **A deploy failed.** The agent reads the reason and the logs, fixes the project and deploys again. See [Why did my deployment fail?](/guides/why-did-my-deployment-fail).
+
 <Card title="API reference" icon="terminal" href="/api/overview">
-  The MCP server is a thin client over the HTTP API. Anything it can do, a
-  script can do with `curl`.
+  The MCP server is a thin client over the HTTP API. Anything it can do, a script can do with `curl`.
 </Card>
-
-## Keeping the key safe
-
-The key is scoped to one application, can write secrets but never read them
-back, and can be revoked on its own without touching anything else you own.
-
-That is deliberate. A key living in an agent's configuration will eventually be
-committed, screenshotted, or pasted into a chat window, and the blast radius
-when it is should be one application. Revoke and replace it in the dashboard at
-any time.
