@@ -27,6 +27,7 @@
               "deploying/github",
               "deploying/upload",
               "deploying/mcp",
+              "deploying/claude-connector",
               "api/terminal-login",
               "api/deploy"
             ]

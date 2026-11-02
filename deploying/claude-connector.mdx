@@ -1,0 +1,96 @@
+---
+title: "Publish a Website from Claude"
+sidebarTitle: "Claude connector"
+description: "Add the Antideploy connector to Claude, ask for a page, and get a live address in a couple of minutes. No sign-in and no key. Claim the site to keep it."
+---
+
+The Antideploy connector lets Claude publish a static website for you. You describe the page, Claude writes the files, and the connector puts them live at an `antideploy.app` address. You do not sign in, install anything or paste a key to see the result.
+
+Every site starts as a 24 hour preview. A claim link keeps it.
+
+## Add the connector
+
+<Steps>
+  <Step title="Open the connector settings">
+    In Claude, open **Settings**, then **Connectors**.
+  </Step>
+  <Step title="Add a custom connector">
+    Choose **Add custom connector**, name it `Antideploy`, and paste this address:
+
+    ```text
+    https://antideploy.com/mcp/claude
+    ```
+  </Step>
+  <Step title="Switch it on in a chat">
+    In a new conversation, open the connectors menu and make sure **Antideploy** is on.
+  </Step>
+</Steps>
+
+Antideploy asks for no account, key or plan.
+
+## Publish a page
+
+Ask in plain words:
+
+```text
+Build a one-page site for a bakery called Test Bakery and publish it.
+```
+
+Claude writes the files and publishes them. It takes about 30 seconds, and then Claude tells you three things:
+
+- **The address**, such as `https://test-bakery-xxxxx.antideploy.app`.
+- **A claim link**, which starts with `https://antideploy.com/claim/`.
+- **When the preview expires**, 24 hours after you published it.
+
+A build takes about two minutes. Claude may say the site is still building. That is normal, and the page often loads before Claude's status check says live. Open the address after a short wait.
+
+## Change the page
+
+Ask for the change in the same conversation:
+
+```text
+Make the heading green and publish the change.
+```
+
+Claude publishes to the same address. An update replaces the site's previous files, so ask Claude to keep what you want to keep.
+
+## Keep the site
+
+Open the claim link and sign in with Google or GitHub. The site moves to your Antideploy account and stays up, and the preview notice disappears from the page.
+
+If nobody claims a site, it is deleted 24 hours after it was published. To publish again, ask Claude for a new site. It gets a new address.
+
+<Warning>
+  The claim link contains the site's edit key. Anyone who has it can claim or change the site, so keep it private and do not paste it into a shared chat.
+</Warning>
+
+If the claim page says the site is still building, wait a minute and refresh it.
+
+## What you can publish
+
+The connector accepts static files only:
+
+- HTML, CSS and JavaScript that runs in the browser
+- Images and fonts
+- Up to 50 files and 10 MB together, with an `index.html`
+
+It cannot run server code, a database, sign-in, payments or email. To deploy an app that needs those, use a [coding agent](/deploying/mcp) or [GitHub](/deploying/github).
+
+Each conversation can make 3 new sites a day, and there is a daily limit across all of Claude. Updating a site you already made does not make a new one.
+
+## Safety
+
+While a site is unclaimed, every page shows a notice that it is an anonymous preview that Antideploy has not checked, with a **Report this site** link. Pages that imitate the login screen of a bank or another service are refused.
+
+## Tools
+
+The connector offers two tools. Claude chooses them for you.
+
+| Tool | What it does |
+| --- | --- |
+| `publish_site` | Sends the files. It makes a new preview, or replaces the files of one you made earlier. |
+| `site_status` | Reports whether the site is building, live or failed, and gives the address and claim link again. |
+
+## Privacy
+
+See the [privacy policy](https://antideploy.com/privacy) for what Antideploy stores and for how long.
